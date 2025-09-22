@@ -1,0 +1,49 @@
+<div class="chat-container">
+  <div *ngIf="mapLoading" class="spinner-overlay"><p-progress-spinner ariaLabel="loading" /></div>
+  <div>
+  </div>
+
+  <div *ngIf="!minimized" class="messages">
+    <ng-container>
+      <div *ngFor="let msg of renderedMessages; let last = first" class="message" [class]="{'user' : msg.sender === 'user', 'system' : msg.sender === 'system'}">
+        <!-- <strong>{{ msg.sender }}:</strong> -->
+         <div class="sender-icon">
+            <fa-icon *ngIf="msg.sender === 'user'" class="icon" [icon]="messageUserIcon"></fa-icon>
+          <!-- <fa-icon *ngIf="msg.sender === 'system'" [icon]="messageSystemIcon"></fa-icon> -->
+             <img *ngIf="msg.sender === 'system'" src="assets/system-logo.png">
+         </div>
+        <label [for]="msg.id" class="vertical-layout">
+          <ng-container *ngIf="msg.loading"> <!-- *ngIf="msg.loading" -->
+             <div class="dot-pulse-container"><div style="margin-left:16px; margin-right: 16px;" class="dot-pulse"></div></div>
+          </ng-container>
+          <ng-container *ngIf="!msg.loading">
+            <ng-container *ngFor="let section of msg.sections">
+              <span *ngIf="section.type === 0" [innerHTML]="section.text">
+              </span>
+              <ng-container *ngIf="section.type === 1">
+                 <a class="clickable" (click)="select($event, section.uri!)">{{section.text}}</a>
+              </ng-container>
+            </ng-container>
+            
+            <div class="action" *ngIf="msg.mappable">
+              <br />
+              <p-button (onClick)="mapIt(msg)">View details</p-button>
+            </div>
+            <div class="action ambiguous" *ngIf="msg.ambiguous && last">
+              <br />
+              <span style=""><p-button (onClick)="askNewQuestion()">New Question</p-button></span>
+              <p-button (onClick)="setWorkflowStepDisambiguate(msg)">View Options</p-button>
+            </div>
+          </ng-container>
+        </label>
+      </div>
+    </ng-container>
+  </div>
+  <div class="input-container">
+    <p-button severity="secondary" pTooltip="Erase conversation" (onClick)="clear()">
+      <fa-icon [icon]="icon"></fa-icon>
+    </p-button>
+    <input type="text" [(ngModel)]="message" placeholder="Type a message..." />
+    <p-button class="btn btn-primary" [disabled]="loading" (onClick)="sendMessage()">Send</p-button>
+  </div>
+</div>

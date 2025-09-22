@@ -1,0 +1,45 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>ai.terraframe.kaleidoscope</groupId>
+  <artifactId>kaleidoscope-dggs</artifactId>
+  <version>0.0.1-SNAPSHOT</version>
+  <packaging>pom</packaging>
+
+  <name>Kaleidoscope AI DGGS</name>
+  <description>Kaleidoscope DGGS</description>
+
+  <modules>
+    <module>kaleidoscope-dggs-ui</module>   
+    <module>kaleidoscope-dggs-api</module>
+  </modules>
+
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <maven.compiler.source>17</maven.compiler.source>
+    <maven.compiler.target>17</maven.compiler.target>
+  </properties>
+  
+
+  <repositories>
+    <repository>
+      <id>central</id>
+      <name>central</name>
+      <url> https://repo1.maven.org/maven2/</url>
+      <layout>default</layout>
+    </repository>
+    <repository>
+      <id>geotools</id>
+      <name>geotools</name>
+      <url>https://repo.osgeo.org/repository/geotools-releases/</url>
+      <layout>default</layout>
+    </repository>    
+  </repositories>
+
+  <scm>
+    <connection>scm:git:ssh://git@github.com/terraframe/geoprism-llm</connection>
+    <developerConnection>scm:git:ssh://git@github.com/terraframe/geoprism-llm</developerConnection>
+    <url>scm:git:ssh://git@github.com/terraframe/geoprism-llm</url>
+    <tag>0.0.1</tag>
+  </scm>
+</project>

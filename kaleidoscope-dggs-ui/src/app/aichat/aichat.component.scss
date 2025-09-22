@@ -1,0 +1,216 @@
+.clickable {
+  cursor: pointer; /* Changes the cursor to a pointer when hovering over the span */
+  color: blue; /* Optional: Change text color to indicate it's clickable */
+  text-decoration: underline; /* Optional: Add underline to make it look like a link */
+}
+
+.chat-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  border: 2px solid #ccc; /* Border around the entire chat component */
+  padding: 5px;
+  box-sizing: border-box; /* Ensures the border is included in the width/height calculations */
+}
+
+::ng-deep .ambiguous button {
+  margin: 2px;
+}
+
+.messages {
+  flex-grow: 1;
+  overflow-y: auto;
+  border: 1px solid #ccc; /* Border around messages */
+  padding: 10px;
+  margin: 3px;
+
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 10px;
+}
+
+.sender-icon {
+  width: 40px;
+  min-width: 40px;
+  height: 40px;
+  margin-right: 20px;
+  background-color: rgb(138, 138, 138, 0.5);
+  border-radius: 18px;
+}
+
+.message .action {
+  text-align: center;
+  width: 100%;
+}
+
+.message fa-icon {
+  color: white;
+}
+
+.message.system .sender-icon {
+  margin-right: 0px;
+  margin-left: 20px;
+}
+
+.sender-icon .icon {
+  display: block;
+  height:100%;
+  width: 100%;
+}
+
+.sender-icon img {
+  height: 100%;
+  padding: 20%;
+  padding-left:10%;
+}
+
+::ng-deep .sender-icon .icon svg {
+  height: 60%;
+  width: 60%;
+  padding: 20%;
+}
+
+.message {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-end;
+  justify-content: flex-start;
+  margin-right: 30px;
+}
+
+.message.system {
+  flex-direction: row-reverse;
+  margin-left: 30px;
+  margin-right: 0px;
+}
+
+.message.system label {
+  background-color: #f1f3f4;
+  color: #202124;
+}
+
+.message strong {
+  display: block;
+  text-align: right; /* Align sender text to the right */
+  white-space: nowrap; /* Prevent sender label from wrapping */
+}
+
+.message label {
+  // display: block;
+  word-wrap: break-word;
+  overflow-wrap: anywhere;
+
+  align-items: flex-start;
+  justify-content: center;
+  flex-direction: column;
+  height: 100%;
+
+  background-color: #e0f2f1;
+  color: #004d40;
+  border-radius: 16px;
+  padding: 10px;
+}
+
+
+.input-container {
+  display: flex;
+  gap: 5px; /* Space between input and button */
+  padding-top: 5px;
+}
+
+input {
+  flex-grow: 1;
+  padding: 5px;
+}
+
+button {
+  width: 80px; /* Adjust as needed */
+  padding: 5px;
+  margin-left: 5px;
+  cursor: pointer;
+}
+
+.message.system .dot-pulse-container {
+  width: 100%;
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: flex-end;
+}
+  
+
+
+
+/**
+ * ==============================================
+ * Dot Pulse
+ * ==============================================
+ */
+ .dot-pulse {
+  position: relative;
+  left: -9999px;
+  width: 10px;
+  height: 10px;
+  border-radius: 5px;
+  background-color: #9880ff;
+  color: #9880ff;
+  box-shadow: 9999px 0 0 -5px;
+  animation: dot-pulse 1.5s infinite linear;
+  animation-delay: 0.25s;
+}
+.dot-pulse::before, .dot-pulse::after {
+  content: "";
+  display: inline-block;
+  position: absolute;
+  top: 0;
+  width: 10px;
+  height: 10px;
+  border-radius: 5px;
+  background-color: #9880ff;
+  color: #9880ff;
+}
+.dot-pulse::before {
+  box-shadow: 9984px 0 0 -5px;
+  animation: dot-pulse-before 1.5s infinite linear;
+  animation-delay: 0s;
+}
+.dot-pulse::after {
+  box-shadow: 10014px 0 0 -5px;
+  animation: dot-pulse-after 1.5s infinite linear;
+  animation-delay: 0.5s;
+}
+
+@keyframes dot-pulse-before {
+  0% {
+    box-shadow: 9984px 0 0 -5px;
+  }
+  30% {
+    box-shadow: 9984px 0 0 2px;
+  }
+  60%, 100% {
+    box-shadow: 9984px 0 0 -5px;
+  }
+}
+@keyframes dot-pulse {
+  0% {
+    box-shadow: 9999px 0 0 -5px;
+  }
+  30% {
+    box-shadow: 9999px 0 0 2px;
+  }
+  60%, 100% {
+    box-shadow: 9999px 0 0 -5px;
+  }
+}
+@keyframes dot-pulse-after {
+  0% {
+    box-shadow: 10014px 0 0 -5px;
+  }
+  30% {
+    box-shadow: 10014px 0 0 2px;
+  }
+  60%, 100% {
+    box-shadow: 10014px 0 0 -5px;
+  }
+}
