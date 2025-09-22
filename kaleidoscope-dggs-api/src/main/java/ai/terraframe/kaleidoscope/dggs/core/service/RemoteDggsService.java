@@ -22,7 +22,7 @@ import com.google.gson.JsonParser;
 import ai.terraframe.kaleidoscope.dggs.core.config.AppProperties;
 
 @Service
-public class RemoteDggsService
+public class RemoteDggsService implements RemoteDggsServiceIF
 {
   private static final int    MAX_TIMEOUT_MINUTES = 5;
 
@@ -31,6 +31,7 @@ public class RemoteDggsService
   @Autowired
   private AppProperties       properties;
 
+  @Override
   public JsonArray data(String collectionId, String dggrsId, String zoneId, Integer zoneDepth) throws IOException, InterruptedException
   {
     // TODO: Change to calling the API with the geojson format and
@@ -42,6 +43,7 @@ public class RemoteDggsService
     return parseHTML(body);
   }
 
+  @Override
   public String html(String collectionId, String dggrsId, String zoneId, Integer zoneDepth) throws IOException, InterruptedException
   {
     // https://ogc-dggs-testing.fmecloud.com/api/dggs/collections/winnipeg-dem/dggs/ISEA3H/zones/G0-51FC9-A/data?f=html&zone-depth=7
@@ -72,22 +74,4 @@ public class RemoteDggsService
     return JsonParser.parseString(substring).getAsJsonArray();
   }
 
-  public String mockHtml() throws IOException
-  {
-    try (InputStream istream = this.getClass().getResourceAsStream("/response.html"))
-    {
-      StringBuilder textBuilder = new StringBuilder();
-
-      try (Reader reader = new BufferedReader(new InputStreamReader(istream, StandardCharsets.UTF_8)))
-      {
-        int c = 0;
-        while ( ( c = reader.read() ) != -1)
-        {
-          textBuilder.append((char) c);
-        }
-      }
-
-      return textBuilder.toString();
-    }
-  }
 }

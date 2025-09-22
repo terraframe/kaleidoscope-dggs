@@ -32,7 +32,7 @@ import com.google.gson.JsonArray;
 
 import ai.terraframe.kaleidoscope.dggs.core.model.LocationPage;
 import ai.terraframe.kaleidoscope.dggs.core.service.JenaService;
-import ai.terraframe.kaleidoscope.dggs.core.service.RemoteDggsService;
+import ai.terraframe.kaleidoscope.dggs.core.service.RemoteDggsServiceIF;
 import ai.terraframe.kaleidoscope.dggs.web.model.QueryRequest;
 
 @RestController
@@ -44,7 +44,7 @@ public class LocationController
   private JenaService       jena;
 
   @Autowired
-  private RemoteDggsService service;
+  private RemoteDggsServiceIF service;
 
   @PostMapping("/api/full-text-lookup")
   @ResponseBody
