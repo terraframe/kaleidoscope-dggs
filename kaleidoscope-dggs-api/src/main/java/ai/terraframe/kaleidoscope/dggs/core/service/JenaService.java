@@ -35,43 +35,56 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import ai.terraframe.kaleidoscope.dggs.core.config.AppProperties;
+import ai.terraframe.kaleidoscope.dggs.core.model.GenericRestException;
 import ai.terraframe.kaleidoscope.dggs.core.model.Location;
 import ai.terraframe.kaleidoscope.dggs.core.model.LocationPage;
 
 @Service
 public class JenaService
 {
-  public static final String OBJECT_PRFIX     = "https://localhost:4200/lpg/graph_801104/0/rdfs#";
+  public static final String GRAPH            = "http://terraframe.ai/g1";
+
+  public static final String NAMESPACE        = "http://terraframe.ai";
 
   public static final String PREFIXES         = """
-      	PREFIX lpgs: <https://localhost:4200/lpg/rdfs#>
-      	PREFIX lpg: <https://localhost:4200/lpg#>
-      	PREFIX lpgv: <https://localhost:4200/lpg/graph_801104/0#>
-      	PREFIX lpgvs: <https://localhost:4200/lpg/graph_801104/0/rdfs#>
-      	PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-      	PREFIX geo: <http://www.opengis.net/ont/geosparql#>
-      	PREFIX spatialF: <http://jena.apache.org/function/spatial#>
+        PREFIX ai: <http://terraframe.ai#>
+        PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+        PREFIX geo: <http://www.opengis.net/ont/geosparql#>
+        PREFIX spatialF: <http://jena.apache.org/function/spatial#>
+        PREFIX text: <http://jena.apache.org/text#>
+
       """;
 
   public static String       FULL_TEXT_LOOKUP = PREFIXES + """
-      		PREFIX   ex: <https://localhost:4200/lpg/graph_801104/0/rdfs#>
-            PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-            PREFIX text: <http://jena.apache.org/text#>
-            PREFIX lpgs: <https://localhost:4200/lpg/rdfs#>
-
-            SELECT ?uri ?type ?code ?label ?wkt
-            FROM <https://localhost:4200/lpg/graph_801104/0#>
-            WHERE {{
+            SELECT ?uri ?code ?label ?type ?wkt
+            FROM <http://terraframe.ai/g1>
+            WHERE {
               (?uri ?score) text:query (rdfs:label ?query) .
-              ?uri lpgs:GeoObject-code ?code .
+              ?uri ai:GeoObject-code ?code .
               ?uri rdfs:label ?label .
               ?uri a ?type .
               OPTIONAL {
                   ?uri geo:hasGeometry ?g .
                   ?g geo:asWKT ?wkt .
               }
-            }}
+            }
             ORDER BY DESC(?score)
+            LIMIT 100
+      """;
+
+  public static String       URI_LOOKUP       = PREFIXES + """
+            SELECT ?code ?label ?type ?wkt
+            FROM <http://terraframe.ai/g1>
+            WHERE {
+              ?uri ai:GeoObject-code ?code .
+              ?uri rdfs:label ?label .
+              ?uri a ?type .
+              OPTIONAL {
+                  ?uri geo:hasGeometry ?g .
+                  ?g geo:asWKT ?wkt .
+              }
+            }
+            LIMIT 1
       """;
 
   @Autowired
@@ -111,15 +124,15 @@ public class JenaService
 
       conn.querySelect(sparql, (qs) -> {
         String uri = qs.getResource("uri").getURI();
-        String type = readString(qs, "type");
         String code = readString(qs, "code");
         String label = readString(qs, "label");
+        String type = readString(qs, "type");
         String wkt = readString(qs, "wkt");
 
         WKTReader reader = WKTReader.extract(wkt);
         Geometry geometry = reader.getGeometry();
 
-        results.add(new Location(uri, type, code, label, geometry));
+        results.add(new Location(uri, code, type, label, geometry));
 
       });
 
@@ -182,7 +195,7 @@ public class JenaService
     }
   }
 
-  public LocationPage fullTextLookup(String query, int offset, int limit)
+  public LocationPage fullTextLookup(String locationName)
   {
     RDFConnectionRemoteBuilder builder = RDFConnectionRemote.create().destination(properties.getJenaUrl());
 
@@ -190,14 +203,11 @@ public class JenaService
 
     try (RDFConnection conn = builder.build())
     {
-      var sparql = FULL_TEXT_LOOKUP;
-      sparql += " LIMIT " + limit + " OFFSET " + offset;
-
       // Use ParameterizedSparqlString to inject the URI safely
       ParameterizedSparqlString pss = new ParameterizedSparqlString();
-      pss.setCommandText(sparql);
+      pss.setCommandText(FULL_TEXT_LOOKUP);
 
-      pss.setLiteral("query", query);
+      pss.setLiteral("query", locationName);
 
       try (QueryExecution qe = conn.query(pss.asQuery()))
       {
@@ -208,15 +218,15 @@ public class JenaService
           QuerySolution qs = rs.next();
 
           String uri = qs.getResource("uri").getURI();
-          String type = qs.getResource("type").getURI();
           String code = qs.getLiteral("code").getString();
-          String label = qs.getLiteral("label").getString();
           String wkt = qs.getLiteral("wkt").getString();
+          String label = qs.getLiteral("label").getString();
+          String type = readString(qs, "type");
 
           WKTReader reader = WKTReader.extract(wkt);
           Geometry geometry = reader.getGeometry();
 
-          results.add(new Location(uri, type, code, label, geometry));
+          results.add(new Location(uri, code, type, label, geometry));
         }
       }
     }
@@ -228,6 +238,43 @@ public class JenaService
     page.setOffset(0);
 
     return page;
+  }
+
+  public Location getLocation(String uri)
+  {
+    RDFConnectionRemoteBuilder builder = RDFConnectionRemote.create().destination(properties.getJenaUrl());
+
+    List<Location> results = new ArrayList<Location>();
+
+    try (RDFConnection conn = builder.build())
+    {
+      // Use ParameterizedSparqlString to inject the URI safely
+      ParameterizedSparqlString pss = new ParameterizedSparqlString();
+      pss.setCommandText(URI_LOOKUP);
+      pss.setIri("uri", uri);
+
+      try (QueryExecution qe = conn.query(pss.asQuery()))
+      {
+        ResultSet rs = qe.execSelect();
+
+        while (rs.hasNext())
+        {
+          QuerySolution qs = rs.next();
+
+          String code = qs.getLiteral("code").getString();
+          String wkt = qs.getLiteral("wkt").getString();
+          String label = qs.getLiteral("label").getString();
+          String type = readString(qs, "type");
+
+          WKTReader reader = WKTReader.extract(wkt);
+          Geometry geometry = reader.getGeometry();
+
+          return new Location(uri, code, type, label, geometry);
+        }
+      }
+    }
+
+    throw new GenericRestException("Unable to find an object with the URI [" + uri + "]");
   }
 
 }

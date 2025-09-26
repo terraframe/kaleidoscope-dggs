@@ -15,31 +15,75 @@
  */
 package ai.terraframe.kaleidoscope.dggs.core.service;
 
+import java.io.IOException;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.google.gson.JsonArray;
+
 import ai.terraframe.kaleidoscope.dggs.core.model.GenericRestException;
+import ai.terraframe.kaleidoscope.dggs.core.model.Location;
 import ai.terraframe.kaleidoscope.dggs.core.model.LocationPage;
-import ai.terraframe.kaleidoscope.dggs.core.model.Message;
+import ai.terraframe.kaleidoscope.dggs.core.model.ZoneCollection;
+import ai.terraframe.kaleidoscope.dggs.core.model.bedrock.BedrockResponse;
+import ai.terraframe.kaleidoscope.dggs.core.model.bedrock.ToolUseResponse;
+import ai.terraframe.kaleidoscope.dggs.core.model.dggs.Zones;
+import ai.terraframe.kaleidoscope.dggs.core.model.message.DisambiguateMessage;
+import ai.terraframe.kaleidoscope.dggs.core.model.message.Message;
+import ai.terraframe.kaleidoscope.dggs.core.model.message.ZoneMessage;
 
 @Service
 public class ChatService
 {
-  private static final Logger log = LoggerFactory.getLogger(ChatService.class);
+  private static final Logger    log      = LoggerFactory.getLogger(ChatService.class);
+
+  public static String           DGGRS_ID = "ISEA3H";
 
   @Autowired
-  private BedrockService      bedrock;
+  private BedrockConverseService bedrock;
 
   @Autowired
-  private JenaService         jena;
+  private JenaService            jena;
 
-  public Message prompt(String sessionId, String inputText)
+  @Autowired
+  private RemoteDggsServiceIF    dggs;
+
+  public Message query(String inputText)
   {
+
     try
     {
-      return this.bedrock.prompt(sessionId, inputText);
+      BedrockResponse message = this.bedrock.getLocationFromText(inputText);
+
+      if (message.getType().equals(BedrockResponse.Type.TOOL_USE))
+      {
+        String locationName = message.asType(ToolUseResponse.class).getLocationName();
+        String category = message.asType(ToolUseResponse.class).getCategory();
+
+        LocationPage page = this.jena.fullTextLookup(locationName);
+
+        if (page.getCount() == 0)
+        {
+          throw new GenericRestException("Unable to find a location with the name [" + inputText + "]");
+        }
+        else if (page.getCount() > 1)
+        {
+          return new DisambiguateMessage(page, category);
+        }
+
+        Location location = page.getLocations().get(0);
+
+        return zones(category, location);
+      }
+
+      throw new UnsupportedOperationException();
+    }
+    catch (GenericRestException e)
+    {
+      throw e;
     }
     catch (Exception e)
     {
@@ -49,24 +93,42 @@ public class ChatService
     }
   }
 
-  public LocationPage getPage(String statement, int offset, int limit)
+  public Message zones(String uri, String category)
   {
+
     try
     {
-      LocationPage page = new LocationPage();
-      page.setLocations(this.jena.query(statement, offset, limit));
-      page.setCount(this.jena.getCount(statement));
-      page.setLimit(limit);
-      page.setOffset(offset);
+      Location location = this.jena.getLocation(uri);
 
-      return page;
+      return zones(category, location);
+    }
+    catch (GenericRestException e)
+    {
+      throw e;
     }
     catch (Exception e)
     {
       log.error("Error invoking a remote service: ", e);
-      log.error("SPARQL statement: " + statement);
 
-      throw new GenericRestException("Unable to map the locations. An error occurred while generating the response", e);
+      throw new GenericRestException("The chat agent was unable to generate a response. If your chat history is not relevant to the current request, you can try clearing your chat history and sending your message again.", e);
     }
+  }
+
+  private Message zones(String category, Location location) throws IOException, InterruptedException
+  {
+    String collectionId = this.dggs.getCollectionId(category);
+
+    Zones zones = this.dggs.zones(collectionId, DGGRS_ID, 9, location);
+
+    if (zones.getZones().size() > 0)
+    {
+      String zoneId = zones.getZones().get(0);
+
+      JsonArray features = this.dggs.data(collectionId, DGGRS_ID, zoneId, 3);
+
+      return new ZoneMessage(new ZoneCollection(location.getGeometry().getEnvelopeInternal(), features));
+    }
+
+    throw new GenericRestException("Unable to get zone information for the collection [" + collectionId + "] and the bounds of [" + location.getProperties().get("label") + "]");
   }
 }

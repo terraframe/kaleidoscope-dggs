@@ -11,7 +11,6 @@ import { Store } from '@ngrx/store';
 import { ExplorerActions, getPage, getWorkflowStep, highlightedObject, selectedObject, WorkflowStep } from '../state/explorer.state';
 import { ChatService } from '../service/chat-service.service';
 import { LocationPage } from '../models/chat.model';
-import { faArrowUp } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
 
 @Component({
@@ -76,7 +75,7 @@ export class ResultsTableComponent implements OnInit, OnDestroy {
     }
 
     onRowHover(obj: GeoObject): void {
-        this.store.dispatch(ExplorerActions.highlightGeoObject({ object: obj }));
+        // this.store.dispatch(ExplorerActions.highlightGeoObject({ object: obj }));
     }
 
     onMouseLeaveTable(): void {
@@ -90,12 +89,12 @@ export class ResultsTableComponent implements OnInit, OnDestroy {
     onPageChange(state: PaginatorState): void {
 
         this.page$.pipe(take(1)).subscribe(page => {
-            this.chatService.getPage(page.statement, state.first!, state.rows!).then(page => {
-                this.store.dispatch(ExplorerActions.setPage({
-                    page,
-                    zoomMap: true
-                }));
-            })
+            // this.chatService.getPage(page.statement, state.first!, state.rows!).then(page => {
+            //     this.store.dispatch(ExplorerActions.setPage({
+            //         page,
+            //         zoomMap: true
+            //     }));
+            // })
         })
 
     }

@@ -3,10 +3,11 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { v4 as uuidv4 } from 'uuid';
 
-import { ChatMessage, LocationPage, ServerChatResponse } from '../models/chat.model';
+import { ChatMessage, LocationPage, Message, ServerChatResponse, ZoneCollection } from '../models/chat.model';
 import { MockUtil } from '../mock-util';
 import { environment } from '../../environments/environment';
 import { GeoObject } from '../models/geoobject.model';
+import { Feature } from 'maplibre-gl';
 
 @Injectable({
   providedIn: 'root',
@@ -17,83 +18,49 @@ export class ChatService {
   }
 
 
-  sendMessage(sessionId: string, message: ChatMessage): Promise<ChatMessage> {
+  query(inputText: string): Promise<Message> {
 
-    if (environment.mockRequests)
-    {
-      return new Promise<ChatMessage>((resolve) => {
-        setTimeout(() => {
-          resolve(MockUtil.message);
-        }, 500); // Simulating network delay 
-      });
-    }
-    else
-    {
-      // Uncomment below to make a real HTTP request
-      let params = new HttpParams();
-      params = params.append("sessionId", sessionId);
-      params = params.append("prompt", message.text);
+    // if (environment.mockRequests)
+    // {
+    //   return new Promise<ChatMessage>((resolve) => {
+    //     setTimeout(() => {
+    //       resolve(MockUtil.message);
+    //     }, 500); // Simulating network delay 
+    //   });
+    // }
+    // else
+    // {
+    // Uncomment below to make a real HTTP request
+    let params = new HttpParams();
+    params = params.append("inputText", inputText);
 
-      return firstValueFrom(this.http.get<ServerChatResponse>(environment.apiUrl + 'api/chat/prompt', { params })).then(response => {
-        const chatMessage: ChatMessage = {
-          id: uuidv4(),
-          sender: 'system',
-          text: response.content,
-          mappable: response.mappable,
-          ambiguous: response.ambiguous,
-          purpose: 'standard',
-          location: response.location
-        };
-        return chatMessage;
-      });
-    }
+    return firstValueFrom(this.http.get<Message>(environment.apiUrl + 'api/chat/query', { params }));
   }
 
-  getLocations(messages: ChatMessage[], offset: number, limit: number): Promise<LocationPage> {
-    if (environment.mockRequests)
-    {
-      return new Promise<LocationPage>((resolve) => {
-        setTimeout(() => {
-          resolve(MockUtil.locations);
-        }, 500); // Simulating network delay
-      });
-    }
-    else
-    {
-      // // // Uncomment below to make a real HTTP request
-      const params = {
-        messages: messages.map(message => ({
-          type: message.sender === 'user' ? 'USER' : 'AI',
-          content: message.text
-        })),
-        limit,
-        offset
-      }
+  zones(uri: string | undefined, category: string): Promise<Message> {
 
-      return firstValueFrom(this.http.post<LocationPage>(environment.apiUrl + 'api/chat/get-locations', params));
+    // if (environment.mockRequests)
+    // {
+    //   return new Promise<ChatMessage>((resolve) => {
+    //     setTimeout(() => {
+    //       resolve(MockUtil.message);
+    //     }, 500); // Simulating network delay 
+    //   });
+    // }
+    // else
+    // {
+    // Uncomment below to make a real HTTP request
+    let params = new HttpParams();
+
+    if (uri) {
+      params = params.append("uri", uri);
     }
+
+    params = params.append("category", category);
+
+    return firstValueFrom(this.http.get<Message>(environment.apiUrl + 'api/chat/zones', { params }));
   }
+  // }
 
-  getPage(statement: string, offset: number, limit: number): Promise<LocationPage> {
-    if (environment.mockRequests)
-    {
-      return new Promise<LocationPage>((resolve) => {
-        setTimeout(() => {
-          resolve(MockUtil.locations);
-        }, 500); // Simulating network delay
-      });
-    }
-    else
-    {
-      // // // Uncomment below to make a real HTTP request
-      const params = {
-        statement,
-        limit,
-        offset
-      }
-
-      return firstValueFrom(this.http.post<LocationPage>(environment.apiUrl + 'api/chat/get-page', params));
-    }
-  }
 
 }

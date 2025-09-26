@@ -1,7 +1,6 @@
 import { GeoJSONGeometry } from "wellknown";
 
 export interface GeoObject {
-    type: string,
     geometry: GeoJSONGeometry,
     id: string
     properties: {

@@ -16,7 +16,6 @@
 package ai.terraframe.kaleidoscope.dggs.web.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -24,7 +23,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
-import ai.terraframe.kaleidoscope.dggs.core.model.Message;
+import ai.terraframe.kaleidoscope.dggs.core.model.message.Message;
 import ai.terraframe.kaleidoscope.dggs.core.service.ChatService;
 
 @RestController
@@ -34,13 +33,22 @@ public class ChatController
   @Autowired
   private ChatService service;
 
-  @GetMapping("/api/chat/prompt")
+  @GetMapping("/api/chat/query")
   @ResponseBody
-  public ResponseEntity<Message> prompt(@RequestParam(name = "sessionId") String sessionId, @RequestParam(name = "prompt") String prompt)
+  public ResponseEntity<Message> query(@RequestParam(name = "inputText") String inputText)
   {
-    Message response = this.service.prompt(sessionId, prompt);
+    Message message = this.service.query(inputText);
 
-    return new ResponseEntity<Message>(response, HttpStatus.OK);
+    return ResponseEntity.ok(message);
+  }
+
+  @GetMapping("/api/chat/zones")
+  @ResponseBody
+  public ResponseEntity<Message> zones(@RequestParam(name = "uri") String uri, @RequestParam(name = "category") String category)
+  {
+    Message message = this.service.zones(uri, category);
+
+    return ResponseEntity.ok(message);
   }
 
 }

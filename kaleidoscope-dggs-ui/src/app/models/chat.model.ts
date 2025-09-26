@@ -1,3 +1,4 @@
+import { Feature, LngLatBoundsLike } from "maplibre-gl";
 import { GeoObject } from "./geoobject.model";
 
 export interface MessageSection {
@@ -6,17 +7,14 @@ export interface MessageSection {
   uri?: string;
 }
 
-
 export interface ChatMessage {
   id: string
   sender: 'user' | 'system';
   text: string;
-  mappable: boolean;
   ambiguous?: boolean;
-  location?: string;
-  sections?: MessageSection[];
   loading?: boolean;
   purpose: 'info' | 'standard'
+  data?: any;
 }
 
 export interface ServerChatResponse {
@@ -28,9 +26,21 @@ export interface ServerChatResponse {
 }
 
 export interface LocationPage {
-  statement: string;
   locations: GeoObject[];
   limit: number;
   offset: number;
   count: number;
 }
+
+export interface ZoneCollection {
+  bbox: LngLatBoundsLike;
+  features: Feature[];
+}
+
+export interface Message {
+  type: string;
+  collection?: ZoneCollection;
+  page?: LocationPage;
+  category?: string;
+}
+

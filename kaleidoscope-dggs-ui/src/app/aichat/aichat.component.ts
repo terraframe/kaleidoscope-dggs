@@ -5,10 +5,10 @@ import { ButtonModule } from 'primeng/button';
 import { TooltipModule } from 'primeng/tooltip';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { Store } from '@ngrx/store';
-import { combineLatest, debounceTime, Observable, Subscription, take, withLatestFrom } from 'rxjs';
+import { combineLatest, Observable, Subscription, take } from 'rxjs';
 import { v4 as uuidv4 } from 'uuid';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
-import { faEraser, faDownLeftAndUpRightToCenter, faUpRightAndDownLeftFromCenter, faUserTie, faUser } from '@fortawesome/free-solid-svg-icons';
+import { faEraser, faUpRightAndDownLeftFromCenter, faUser } from '@fortawesome/free-solid-svg-icons';
 
 import { ChatService } from '../service/chat-service.service';
 import { ChatMessage } from '../models/chat.model';
@@ -32,7 +32,7 @@ export class AichatComponent {
   public messageSenderIcon = faUpRightAndDownLeftFromCenter;
   private store = inject(Store);
 
-  message: string = '';
+  message: string = 'What is the elevation of Winnipeg?';
 
   messages$: Observable<ChatMessage[]> = this.store.select(getMessages);
   sessionId$: Observable<string> = this.store.select(getSessionId);
@@ -52,9 +52,7 @@ export class AichatComponent {
 
   constructor(
     private chatService: ChatService,
-    private explorerService: ExplorerService,
-    private errorService: ErrorService,
-    private messageService: MessageService) {
+    private errorService: ErrorService) {
 
     this.onMessagesChange = this.messages$.subscribe(messages => {
       this.renderedMessages = [...messages].reverse();
@@ -88,8 +86,6 @@ export class AichatComponent {
           id: uuidv4(),
           sender: 'user',
           text: this.message,
-          mappable: false,
-          sections: [{ type: 0, text: this.message }],
           loading: false,
           purpose: 'standard'
         };
@@ -102,8 +98,6 @@ export class AichatComponent {
           id: uuidv4(),
           sender: 'system',
           text: '',
-          mappable: false,
-          sections: [],
           loading: true,
           purpose: 'standard'
         };
@@ -112,15 +106,43 @@ export class AichatComponent {
 
         this.loading = true;
 
-        this.chatService.sendMessage(sessionId, message).then((response) => {
-          this.store.dispatch(ChatActions.updateMessage({
-            ...system,
-            text: response.text,
-            mappable: response.mappable,
-            ambiguous: response.ambiguous,
-            loading: false,
-            location: response.location
-          }));
+        this.chatService.query(message.text).then((message) => {
+
+          if (message.type === 'ZONES') {
+            if (message.collection != null) {
+              this.store.dispatch(ExplorerActions.setZones({ collection: message.collection }));
+            }
+
+            this.store.dispatch(ChatActions.updateMessage({
+              ...system,
+              text: "See on map!",
+              loading: false,
+              data: message.collection
+            }));
+          }
+
+          if (message.type === 'DISAMBIGUATE') {
+            if (message.page != null) {
+              this.store.dispatch(ExplorerActions.setPage({ page: message.page }));
+              this.store.dispatch(ExplorerActions.setWorkflowStep({
+                step: WorkflowStep.DisambiguateObject, data: {
+                  category: message.category
+                }
+              }));
+              this.store.dispatch(ExplorerActions.selectGeoObject(null));
+            }
+
+            this.store.dispatch(ChatActions.updateMessage({
+              ...system,
+              text: "There are multiple locations",
+              loading: false,
+              ambiguous: true,
+              data: {
+                page: message.page,
+                category: message.category
+              }
+            }));
+          }
         }).catch(error => {
           this.errorService.handleError(error)
 
@@ -140,87 +162,101 @@ export class AichatComponent {
 
   minimizeChat() {
     if (!this.minimized) {
-        this.store.dispatch(ExplorerActions.setWorkflowStep({ step: WorkflowStep.MinimizeChat }));
-        this.minimized = true;
+      this.store.dispatch(ExplorerActions.setWorkflowStep({ step: WorkflowStep.MinimizeChat }));
+      this.minimized = true;
     }
     else {
-        this.store.dispatch(ExplorerActions.setWorkflowStep({ step: WorkflowStep.AiChatAndResults }));
-        this.minimized = false;
+      this.store.dispatch(ExplorerActions.setWorkflowStep({ step: WorkflowStep.AiChatAndResults }));
+      this.minimized = false;
     }
-}
+  }
 
   askNewQuestion() {
     this.clear();
   }
 
   mapIt(message: ChatMessage) {
-    this.messages$.pipe(take(1)).subscribe(messages => {
+    // this.messages$.pipe(take(1)).subscribe(messages => {
 
-      const index = messages.findIndex(m => m.id === message.id);
+    //   const index = messages.findIndex(m => m.id === message.id);
 
-      if (index !== -1) {
-        let history = [...messages];
-        history.splice(index);
-        history = history.filter(m => m.purpose === 'standard');
+    //   if (index !== -1) {
+    //     let history = [...messages];
+    //     history.splice(index);
+    //     history = history.filter(m => m.purpose === 'standard');
 
-        this.mapLoading = true;
+    //     this.mapLoading = true;
 
-        this.chatService.getLocations(history, 0, 100).then((page) => {
+    //     this.chatService.getLocations(history, 0, 100).then((page) => {
 
-          if (page.count == 0) {
-            this.messageService.add({
-              key: 'explorer',
-              severity: 'info',
-              summary: 'Info',
-              detail: "The query did not return any results!",
-              sticky: true
-            })
-          }
+    //       if (page.count == 0) {
+    //         this.messageService.add({
+    //           key: 'explorer',
+    //           severity: 'info',
+    //           summary: 'Info',
+    //           detail: "The query did not return any results!",
+    //           sticky: true
+    //         })
+    //       }
 
-          this.store.dispatch(ExplorerActions.selectGeoObject(null));
+    //       this.store.dispatch(ExplorerActions.selectGeoObject(null));
 
-          this.store.dispatch(ExplorerActions.setPage({
-            page,
-            zoomMap: true
-          }));
+    //       this.store.dispatch(ExplorerActions.setPage({
+    //         page,
+    //         zoomMap: true
+    //       }));
 
-          if (message.ambiguous)
-            this.store.dispatch(ExplorerActions.setWorkflowStep({ step: WorkflowStep.DisambiguateObject }));
+    //       if (message.ambiguous)
+    //         this.store.dispatch(ExplorerActions.setWorkflowStep({ step: WorkflowStep.DisambiguateObject }));
 
-        }).catch(error => this.errorService.handleError(error)).finally(() => {
-          this.mapLoading = false;
-        })
-      }
-    });
+    //     }).catch(error => this.errorService.handleError(error)).finally(() => {
+    //       this.mapLoading = false;
+    //     })
+    //   }
+    // });
   }
 
   setWorkflowStepDisambiguate(message: ChatMessage) {
-    this.mapLoading = true;
+    this.store.dispatch(ExplorerActions.setPage({
+      page: message.data.page,
+    }));
 
-    this.explorerService.fullTextLookup(message.location!).then((page) => {
+    this.store.dispatch(ExplorerActions.selectGeoObject(null));
 
-      this.store.dispatch(ExplorerActions.setPage({
-        page,
-        zoomMap: true
-      }));
+    this.store.dispatch(ExplorerActions.setWorkflowStep({
+      step: WorkflowStep.DisambiguateObject, data: {
+        category: message.data.category
+      }
+    }));
 
-      this.store.dispatch(ExplorerActions.selectGeoObject(null));
 
-      this.store.dispatch(ExplorerActions.setWorkflowStep({ step: WorkflowStep.DisambiguateObject }));
+    // this.mapLoading = true;
 
-    }).catch(error => this.errorService.handleError(error)).finally(() => {
-      this.mapLoading = false;
-    })
+    // this.explorerService.fullTextLookup(message.location!).then((page) => {
+
+    //   this.store.dispatch(ExplorerActions.setPage({
+    //     page,
+    //     zoomMap: true
+    //   }));
+
+    //   this.store.dispatch(ExplorerActions.selectGeoObject(null));
+
+    //   this.store.dispatch(ExplorerActions.setWorkflowStep({ step: WorkflowStep.DisambiguateObject }));
+
+    // }).catch(error => this.errorService.handleError(error)).finally(() => {
+    //   this.mapLoading = false;
+    // })
   }
 
   clear(): void {
-    this.store.dispatch(ExplorerActions.setPage({ page: { 
-      locations: [],
-      statement: "",
-      limit: 100,
-      offset: 0,
-      count: 0
-    }, zoomMap: false }));
+    this.store.dispatch(ExplorerActions.setPage({
+      page: {
+        locations: [],
+        limit: 100,
+        offset: 0,
+        count: 0
+      }
+    }));
     this.store.dispatch(ChatActions.setMessageAndSession({ messages: [], sessionId: uuidv4() }));
   }
 
@@ -232,15 +268,15 @@ export class AichatComponent {
   }
 
   select(event: Event, uri: string): void {
-    event.stopPropagation();
-    this.mapLoading = true;
+    // event.stopPropagation();
+    // this.mapLoading = true;
 
-    this.explorerService.getAttributes(uri, true)
-      .then(geoObject => {
-        this.store.dispatch(ExplorerActions.selectGeoObject({ object: geoObject, zoomMap: true }));
-      })
-      .catch(error => this.errorService.handleError(error)).finally(() => {
-        this.mapLoading = false;
-      })
+    // this.explorerService.getAttributes(uri, true)
+    //   .then(geoObject => {
+    //     this.store.dispatch(ExplorerActions.selectGeoObject({ object: geoObject, zoomMap: true }));
+    //   })
+    //   .catch(error => this.errorService.handleError(error)).finally(() => {
+    //     this.mapLoading = false;
+    //   })
   }
 }

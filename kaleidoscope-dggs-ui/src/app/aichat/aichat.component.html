@@ -17,21 +17,11 @@
              <div class="dot-pulse-container"><div style="margin-left:16px; margin-right: 16px;" class="dot-pulse"></div></div>
           </ng-container>
           <ng-container *ngIf="!msg.loading">
-            <ng-container *ngFor="let section of msg.sections">
-              <span *ngIf="section.type === 0" [innerHTML]="section.text">
-              </span>
-              <ng-container *ngIf="section.type === 1">
-                 <a class="clickable" (click)="select($event, section.uri!)">{{section.text}}</a>
-              </ng-container>
-            </ng-container>
-            
-            <div class="action" *ngIf="msg.mappable">
-              <br />
-              <p-button (onClick)="mapIt(msg)">View details</p-button>
-            </div>
+            {{msg.text}}
+                        
             <div class="action ambiguous" *ngIf="msg.ambiguous && last">
               <br />
-              <span style=""><p-button (onClick)="askNewQuestion()">New Question</p-button></span>
+              <span><p-button (onClick)="askNewQuestion()">New Question</p-button></span>
               <p-button (onClick)="setWorkflowStepDisambiguate(msg)">View Options</p-button>
             </div>
           </ng-container>

@@ -24,7 +24,7 @@ public class Location
   @JsonSerialize(using = GeometrySerializer.class)
   private Geometry            geometry;
 
-  public Location(String uri, String type, String code, String label, Geometry geometry)
+  public Location(String uri, String code, String type, String label, Geometry geometry)
   {
     this.id = uri;
     this.geometry = geometry;

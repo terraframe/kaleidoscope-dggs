@@ -8,7 +8,6 @@ export class MockUtil {
       id: '1',
       sender: 'user',
       text: "",
-      mappable: false,
       purpose: 'standard'
     }
 
@@ -19,7 +18,6 @@ export class MockUtil {
   }
 
   public static locations: LocationPage = {
-    statement: "A list of available locations",
     locations: [
     ],
     limit: 17,

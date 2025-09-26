@@ -1,15 +1,15 @@
 import { Component, AfterViewInit, TemplateRef, ViewChild, inject, OnInit, OnDestroy } from '@angular/core';
-import { Map, NavigationControl, AttributionControl, LngLatBounds, LngLat, GeoJSONSource, LngLatBoundsLike, MapGeoJSONFeature, Source } from "maplibre-gl";
+import { Map, NavigationControl, AttributionControl, LngLatBounds, LngLat, GeoJSONSource, LngLatBoundsLike, MapGeoJSONFeature, Source, Feature } from "maplibre-gl";
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CdkDragDrop, DragDropModule, moveItemInArray } from '@angular/cdk/drag-drop';
-import JSON5 from 'json5'
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { PanelModule } from 'primeng/panel';
 import { ToastModule } from 'primeng/toast';
 import { CheckboxModule } from 'primeng/checkbox';
-import { combineLatest, combineLatestAll, distinctUntilChanged, Observable, Subscription, switchMap, take, withLatestFrom } from 'rxjs';
+import { Observable, Subscription, take, withLatestFrom } from 'rxjs';
 import { Store } from '@ngrx/store';
+import { v4 as uuidv4 } from 'uuid';
 
 import { GeoObject } from '../models/geoobject.model';
 import { StyleConfig } from '../models/style.model';
@@ -22,7 +22,7 @@ import { defaultQueries, SELECTED_COLOR, HOVER_COLOR } from './defaultQueries';
 import { AllGeoJSON, bbox, bboxPolygon, center, union } from '@turf/turf';
 import { ExplorerService } from '../service/explorer.service';
 import { ErrorService } from '../service/error-service.service';
-import { ExplorerActions, getNeighbors, getObjects, getStyles, getVectorLayers, getZoomMap, highlightedObject, selectedObject, getWorkflowStep, WorkflowStep, getPage } from '../state/explorer.state';
+import { ExplorerActions, getNeighbors, getObjects, getStyles, getVectorLayers, getZoomMap, highlightedObject, selectedObject, getWorkflowStep, WorkflowStep, getPage, getZones, getBbox, getWorkflowData } from '../state/explorer.state';
 import { TabsModule } from 'primeng/tabs';
 import { debounce } from 'lodash';
 import { VectorLayer } from '../models/vector-layer.model';
@@ -30,8 +30,10 @@ import { environment } from '../../environments/environment';
 import { faArrowLeft, faArrowRight, faDownLeftAndUpRightToCenter, faUpRightAndDownLeftFromCenter } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
 import { ButtonModule } from 'primeng/button';
-import { LocationPage } from '../models/chat.model';
+import { ChatMessage, LocationPage } from '../models/chat.model';
 import { TooltipModule } from 'primeng/tooltip';
+import { ChatActions } from '../state/chat.state';
+import { ChatService } from '../service/chat-service.service';
 
 export interface TypeLegend { [key: string]: { label: string, color: string, visible: boolean, included: boolean } }
 
@@ -71,19 +73,23 @@ export class ExplorerComponent implements OnInit, OnDestroy, AfterViewInit {
 
     private store = inject(Store);
 
+    zones$: Observable<Feature[]> = this.store.select(getZones);
+
+    bbox$: Observable<LngLatBoundsLike | null> = this.store.select(getBbox);
+
     zoomMap$: Observable<boolean> = this.store.select(getZoomMap);
 
-    geoObjects$: Observable<GeoObject[]> = this.store.select(getObjects);
+    // geoObjects$: Observable<GeoObject[]> = this.store.select(getObjects);
 
-    geoObjects: GeoObject[] = [];
+    // geoObjects: GeoObject[] = [];
 
-    renderedObjects: string[] = [];
+    // renderedObjects: string[] = [];
 
-    onMapObjectsChange: Subscription;
+    // onMapObjectsChange: Subscription;
 
-    neighbors$: Observable<GeoObject[]> = this.store.select(getNeighbors);
+    // neighbors$: Observable<GeoObject[]> = this.store.select(getNeighbors);
 
-    neighbors: GeoObject[] = [];
+    // neighbors: GeoObject[] = [];
 
     styles$: Observable<StyleConfig> = this.store.select(getStyles);
 
@@ -91,13 +97,13 @@ export class ExplorerComponent implements OnInit, OnDestroy, AfterViewInit {
 
     onSelectedObjectChange: Subscription;
 
-    highlightedObject$: Observable<GeoObject | null> = this.store.select(highlightedObject);
+    // highlightedObject$: Observable<GeoObject | null> = this.store.select(highlightedObject);
 
-    onHighlightedObjectChange: Subscription;
+    // onHighlightedObjectChange: Subscription;
 
     workflowStep$: Observable<WorkflowStep> = this.store.select(getWorkflowStep);
 
-    onWorkflowStepChange: Subscription;
+    workflowData$: Observable<any> = this.store.select(getWorkflowData);
 
     page$: Observable<LocationPage> = this.store.select(getPage);
 
@@ -140,11 +146,9 @@ export class ExplorerComponent implements OnInit, OnDestroy, AfterViewInit {
 
     vectorLayers$: Observable<VectorLayer[]> = this.store.select(getVectorLayers);
 
-    onVectorLayersChange: Subscription;
+    // onVectorLayersChange: Subscription;
 
     public workflowStep: WorkflowStep = WorkflowStep.AiChatAndResults;
-
-    private zoomMap: boolean = false;
 
     public activeTab: string = '0';
 
@@ -152,7 +156,6 @@ export class ExplorerComponent implements OnInit, OnDestroy, AfterViewInit {
 
     public page: LocationPage = {
         locations: [],
-        statement: "",
         limit: 100,
         offset: 0,
         count: 0
@@ -160,30 +163,31 @@ export class ExplorerComponent implements OnInit, OnDestroy, AfterViewInit {
 
     constructor(
         private configurationService: ConfigurationService,
-        private explorerService: ExplorerService,
+        private chatService: ChatService,
         private errorService: ErrorService
     ) {
 
-        /*
-         * The map should reload when the geo objects change, the styles change, or the neighbors change
-         */
-        this.onMapObjectsChange = combineLatest([this.geoObjects$, this.neighbors$])
-            .pipe(withLatestFrom(this.styles$, this.zoomMap$))
-            .subscribe(([[geoObjects, neighbors], styles, zoomMap]) => {
-                this.geoObjects = geoObjects;
-                this.neighbors = neighbors;
-                this.resolvedStyles = styles;
-                this.zoomMap = zoomMap;
+        // /*
+        //  * The map should reload when the geo objects change, the styles change, or the neighbors change
+        //  */
+        // this.onMapObjectsChange = combineLatest([this.geoObjects$, this.neighbors$])
+        //     .pipe(withLatestFrom(this.styles$, this.zoomMap$))
+        //     .subscribe(([[geoObjects, neighbors], styles, zoomMap]) => {
+        //         this.geoObjects = geoObjects;
+        //         this.neighbors = neighbors;
+        //         this.resolvedStyles = styles;
+        //         this.zoomMap = zoomMap;
 
-                this.render();
-            });
+        //         this.render();
+        //     });
 
-        this.onVectorLayersChange = this.vectorLayers$.subscribe(() => {
-            this.renderVectorLayers();
-        });
+        // this.onVectorLayersChange = this.vectorLayers$.subscribe(() => {
+        //     this.renderVectorLayers();
+        // });
 
         this.onSelectedObjectChange = this.selectedObject$.pipe(withLatestFrom(this.zoomMap$, this.styles$)).subscribe(([object, zoomMap, styles]) => {
             this.resolvedStyles = styles;
+
             this.selectObject(object, zoomMap);
 
             // Selecting or unselecting an object can change the map size. If we don't resize, we can end up with weird white bars on the side when the attribute panel goes away.
@@ -192,17 +196,37 @@ export class ExplorerComponent implements OnInit, OnDestroy, AfterViewInit {
             }, 0);
         });
 
-        this.onHighlightedObjectChange = this.highlightedObject$.subscribe(object => {
-            this.highlightObject(object == null ? undefined : object.properties.uri);
-        });
+        // this.onHighlightedObjectChange = this.highlightedObject$.subscribe(object => {
+        //     this.highlightObject(object == null ? undefined : object.properties.uri);
+        // });
 
-        this.onWorkflowStepChange = this.workflowStep$.subscribe(step => {
+        this.workflowStep$.subscribe(step => {
             this.workflowStep = step;
+
             this.chatMinimized = step == WorkflowStep.MinimizeChat;
         });
 
         this.onPageChange = this.page$.subscribe(page => {
             this.page = page;
+        });
+
+        this.zones$.subscribe(zones => {
+
+            if (this.initialized) {
+                const geojson: any = {
+                    type: "FeatureCollection",
+                    features: zones
+                }
+
+                const source = this.map?.getSource('data') as GeoJSONSource;
+                source.setData(geojson);
+            }
+        })
+
+        this.bbox$.subscribe(bbox => {
+            if (this.initialized && bbox != null) {
+                this.map?.fitBounds(bbox, { padding: 50 });
+            }
         });
     }
 
@@ -213,21 +237,20 @@ export class ExplorerComponent implements OnInit, OnDestroy, AfterViewInit {
     }
 
     ngOnDestroy(): void {
-        this.onMapObjectsChange.unsubscribe();
-        this.onVectorLayersChange.unsubscribe();
-        this.onSelectedObjectChange.unsubscribe();
-        this.onHighlightedObjectChange.unsubscribe();
+        // this.onMapObjectsChange.unsubscribe();
+        // this.onVectorLayersChange.unsubscribe();
+        // this.onSelectedObjectChange.unsubscribe();
+        // this.onHighlightedObjectChange.unsubscribe();
     }
 
     cancelDisambiguation() {
         this.store.dispatch(ExplorerActions.setPage({
             page: {
                 locations: [],
-                statement: "",
                 limit: 100,
                 offset: 0,
                 count: 0
-            }, zoomMap: false
+            }
         }));
         this.store.dispatch(ExplorerActions.setWorkflowStep({ step: WorkflowStep.AiChatAndResults }));
     }
@@ -236,13 +259,70 @@ export class ExplorerComponent implements OnInit, OnDestroy, AfterViewInit {
         this.store.dispatch(ExplorerActions.setPage({
             page: {
                 locations: [],
-                statement: "",
                 limit: 100,
                 offset: 0,
                 count: 0
-            }, zoomMap: false
+            }
         }));
-        this.store.dispatch(ExplorerActions.setWorkflowStep({ step: WorkflowStep.AiChatAndResults, data: this.selectedObject }));
+
+        if (this.selectedObject != null) {
+
+            const message: ChatMessage = {
+                id: uuidv4(),
+                sender: 'user',
+                text: this.selectedObject?.properties.code,
+                loading: false,
+                purpose: 'standard'
+            };
+
+            this.store.dispatch(ChatActions.addMessage(message));
+
+            const system: ChatMessage = {
+                id: uuidv4(),
+                sender: 'system',
+                text: '',
+                loading: true,
+                purpose: 'standard'
+            };
+
+            this.store.dispatch(ChatActions.addMessage(system));
+
+            this.loading = true;
+
+            this.workflowData$.pipe(take(1)).subscribe(data => {
+
+                this.chatService.zones(this.selectedObject?.properties.uri, data.category).then((message) => {
+
+                    if (message.type === 'ZONES') {
+                        if (message.collection != null) {
+                            this.store.dispatch(ExplorerActions.setZones({ collection: message.collection }));
+                        }
+
+                        this.store.dispatch(ChatActions.updateMessage({
+                            ...system,
+                            text: "See on map!",
+                            loading: false,
+                            data: message.collection
+                        }));
+                    }
+
+                    this.store.dispatch(ExplorerActions.setWorkflowStep({ step: WorkflowStep.AiChatAndResults }));
+
+                }).catch((error: any) => {
+                    this.errorService.handleError(error)
+
+                    this.store.dispatch(ChatActions.updateMessage({
+                        ...system,
+                        text: 'An error occurred',
+                        loading: false,
+                        purpose: 'info'
+                    }));
+
+                }).finally(() => {
+                    this.loading = false;
+                })
+            });
+        }
     }
 
     minimizeChat() {
@@ -266,28 +346,28 @@ export class ExplorerComponent implements OnInit, OnDestroy, AfterViewInit {
 
     render(): void {
         if (this.initialized) {
-            // Clear the map
-            this.clearAllMapData();
+            // // Clear the map
+            // this.clearAllMapData();
 
-            // Handle the geo objects
-            const types = Object.keys(this.geoObjectsByType());
+            // // Handle the geo objects
+            // const types = Object.keys(this.geoObjectsByType());
 
-            // Order the types by the order defined in their style config
-            this.orderedTypes = types.sort((a, b) => {
-                return (this.resolvedStyles[a]?.order ?? 999) - (this.resolvedStyles[b]?.order ?? 999);
-            });
+            // // Order the types by the order defined in their style config
+            // this.orderedTypes = types.sort((a, b) => {
+            //     return (this.resolvedStyles[a]?.order ?? 999) - (this.resolvedStyles[b]?.order ?? 999);
+            // });
 
-            this.calculateTypeLegend();
+            // this.calculateTypeLegend();
 
-            this.mapGeoObjects();
+            // this.mapGeoObjects();
 
             // if (this.zoomMap) {
             //     this.zoomToAll();
             // }
 
-            this.renderHighlights();
+            // this.renderHighlights();
 
-            this.renderedObjects = this.allGeoObjects().map(obj => obj.properties.uri);
+            // this.renderedObjects = this.allGeoObjects().map(obj => obj.properties.uri);
         }
     }
 
@@ -483,18 +563,12 @@ export class ExplorerComponent implements OnInit, OnDestroy, AfterViewInit {
         // setTimeout(() => {
         // Find the index of the first symbol layer in the map style
         const layers = this.map?.getStyle().layers;
-        let firstSymbolId;
-        for (let i = 0; i < layers!.length; i++) {
-            if (layers![i].type === 'symbol') {
-                firstSymbolId = layers![i].id;
-                break;
-            }
-        }
 
         // The layers are organized by the type, so we have to group geoObjects by type and create a layer for each type
         let gosByType = this.geoObjectsByType();
 
         let allGeoObjects = this.allGeoObjects();
+
         for (let i = this.orderedTypes.length - 1; i >= 0; --i) {
             let type = this.orderedTypes[i];
             let geoObjects = gosByType[type];
@@ -522,9 +596,6 @@ export class ExplorerComponent implements OnInit, OnDestroy, AfterViewInit {
                 promoteId: 'uri' // A little surprised at mapbox here, but without this param it won't use the id property for the feature id
             });
 
-            this.map?.addLayer(this.layerConfig(type, geoObjects[0].geometry.type.toUpperCase()),
-                firstSymbolId);
-
             // Label layer
             this.map?.addLayer({
                 id: type + "-LABEL",
@@ -542,9 +613,10 @@ export class ExplorerComponent implements OnInit, OnDestroy, AfterViewInit {
                     "text-anchor": "top",
                     "text-size": 12
                 }
-            });
+            }, "data-shape");
 
-            this.addHighlightLayers(type, geoObjects[0].geometry.type.toUpperCase());
+            // this.addHighlightLayers(type, geoObjects[0].geometry.type.toUpperCase());
+            this.map?.addLayer(this.layerConfig(type, geoObjects[0].geometry.type.toUpperCase()), type + "-LABEL");
         }
         // },10);
     }
@@ -663,14 +735,16 @@ export class ExplorerComponent implements OnInit, OnDestroy, AfterViewInit {
     }
 
     allGeoObjects(): GeoObject[] {
-        let all = this.geoObjects.concat(this.neighbors);
+        // let all = this.geoObjects.concat(this.neighbors);
 
-        if (this.selectedObject)
-            all.push(this.selectedObject);
+        // if (this.selectedObject)
+        //     all.push(this.selectedObject);
 
-        // Enforce each GeoObject only occurs once
-        const seen = new Set<string>();
-        return all.filter(obj => seen.has(obj.properties.uri) ? false : seen.add(obj.properties.uri));
+        // // Enforce each GeoObject only occurs once
+        // const seen = new Set<string>();
+        // return all.filter(obj => seen.has(obj.properties.uri) ? false : seen.add(obj.properties.uri));
+
+        return [];
     }
 
     geoObjectsByType(): { [key: string]: GeoObject[] } {
@@ -691,57 +765,12 @@ export class ExplorerComponent implements OnInit, OnDestroy, AfterViewInit {
     }
 
 
-    public getUsaceUri(go: GeoObject): string { return ExplorerComponent.getUsaceUri(go); }
-
-    public static getUsaceUri(go: GeoObject): string {
-        if (go.properties.uri.indexOf('dime.usace.mil') !== -1) {
-            return go.properties.uri;
-        } else if (go.properties.uri.indexOf('georegistry') !== -1) {
-            // Program
-            // http://dime.usace.mil/data/program#010180
-            // http://dime.usace.mil/data/program%23000510
-
-            // Channel Reach
-            // https://dev-georegistry.geoprism.net/lpg/deliverable2024/0#ChannelReach-CESWL_AR_06_TER_5
-            // http://dime.usace.mil/data/channelReach%23CESWT_AR_16_WBF_13
-
-            // Project
-            // https://dev-georegistry.geoprism.net/lpg/deliverable2024/0#Project-30000574
-            // http://dime.usace.mil/data/remis_project%23PROJ644
-
-            let uri = go.properties.uri
-                .replace("https://dev-georegistry.geoprism.net/lpg/deliverable2024/0#", "http://dime.usace.mil/data/");
-
-            if (uri.indexOf("Project-") !== -1) {
-                uri = uri.replace("Project-", "remis_project%23");
-            } else {
-                uri = uri.replace("-", "%23");
-            }
-
-            if (uri.indexOf("ChannelReach") !== -1) {
-                uri = uri.replace("ChannelReach", "channelReach");
-            }
-
-            return uri;
-        } else {
-            return go.properties.uri;
-        }
-    }
-
     public getObjectUrl(go: GeoObject): string {
         return ExplorerComponent.getObjectUrl(go);
     }
 
     public static getObjectUrl(go: GeoObject): string {
-        if (go.properties.type.indexOf("Program") != -1
-            || go.properties.type.indexOf("ChannelReach") != -1
-            || go.properties.uri.indexOf("Project") != -1
-            || go.properties.uri.indexOf("usace.mil") != -1
-        ) {
-            return "https://prism.usace-dime.net/view?uri=" + this.getUsaceUri(go);
-        } else {
-            return go.properties.uri;
-        }
+        return go.properties.uri;
     }
 
     /*
@@ -781,7 +810,7 @@ export class ExplorerComponent implements OnInit, OnDestroy, AfterViewInit {
                 }
             }, null)) as LngLatBoundsLike
 
-            // this.map?.fitBounds(allBounds, { padding: 50 })
+            this.map?.fitBounds(allBounds, { padding: 50 })
         }
     }
 
@@ -890,42 +919,6 @@ export class ExplorerComponent implements OnInit, OnDestroy, AfterViewInit {
         }
     }
 
-    /*
-      async onFileChange(e: any) {
-        const file:File = e.target.files[0];
-     
-        if (file != null)
-        {
-            this.loadRdf(file);
-        }
-      }
-     
-      async loadRdf(file: File) {
-        this.loading = true;
-     
-        let text = await file.text();
-        this.tripleStore = new Store();
-     
-        const parser = new Parser();
-        parser.parse(text, (error, quad, prefixes) => {
-            if (error)
-            {
-                console.log(error);
-                this.importError = error.message;
-                this.loading = false;
-            }
-            else if (quad) {
-                this.tripleStore?.add(quad);
-            }
-            else {
-                console.log("Successfully loaded " + this.tripleStore?.size + " quads into memory.");
-                this.loading = false;
-                this.modalRef?.hide();
-            }
-        });
-      }
-      */
-
     initializeMap() {
         const layer = this.baseLayers[0];
 
@@ -972,52 +965,83 @@ export class ExplorerComponent implements OnInit, OnDestroy, AfterViewInit {
         this.map!.on("load", () => {
             this.initMap();
 
-            this.initialized = true;
-
             // this.renderVectorLayers();
-            this.explorerService.data(7).then(features => {
-                let geojson: any = {
-                    type: "FeatureCollection",
-                    features: features
-                }
 
-                this.map?.addSource("data", {
-                    type: "geojson",
-                    data: geojson
-                });
 
-                this.map!.addLayer({
-                    "id": "data-shape",
-                    "source": "data",
-                    "type": "fill",
-                    "paint": {
-                        'fill-color': SELECTED_COLOR,
-                        "fill-opacity": 0.8,
-                        "fill-outline-color": "black"
-                    }
-                });
+            const geojson: any = {
+                type: 'FeatureCollection',
+                features: []
+            }
+
+            this.map?.addSource('data', {
+                type: 'geojson',
+                data: geojson
             });
+
+            this.map!.addLayer({
+                'id': 'data-label',
+                'source': 'data',
+                'type': 'symbol',
+                'paint': {
+                    'text-color': 'black',
+                    'text-halo-color': '#fff',
+                    'text-halo-width': 2
+                },
+                'layout': {
+                    'text-field': ['get', 'value'],
+                    'text-font': ['NotoSansRegular'],
+                    'text-offset': [0, 0.6],
+                    'text-anchor': 'top',
+                    'text-size': 12,
+                },
+            });
+
+            this.map!.addLayer({
+                id: 'data-point',
+                type: 'circle', // Layer type (e.g., circle, line, fill)
+                source: 'data',
+                paint: {
+                    'circle-radius': 7,
+                    'circle-color': SELECTED_COLOR
+                },
+                // 'filter': ['==', '$type', 'Point']
+            }, 'data-label');
+
+            this.map!.addLayer({
+                'id': 'data-shape',
+                'source': 'data',
+                'type': 'fill',
+                'paint': {
+                    'fill-color': SELECTED_COLOR,
+                    'fill-opacity': 0.8,
+                    'fill-outline-color': 'black'
+                },
+                // 'filter': ['==', '$type', 'Polygon']
+            }, 'data-point');
+
+            this.initialized = true;
         });
-        this.map.on('mousemove', this.highlightSelectedLayerOnMouseMove);
+
+        // this.map.on('mousemove', this.highlightSelectedLayerOnMouseMove);
     }
 
-    highlightSelectedLayerOnMouseMove = debounce((e: any) => {
-        const features = this.getSortedFeature(e);
-        const feature = features.find(f => f.properties['uri'] != null);
+    // highlightSelectedLayerOnMouseMove = debounce((e: any) => {
+    //     const features = this.getSortedFeature(e);
+    //     const feature = features.find(f => f.properties['uri'] != null);
 
-        if (feature) {
-            const uri = feature.properties['uri'];
-            const highlightedObject = this.allGeoObjects().find(go => go.properties.uri === uri);
-            this.store.dispatch(ExplorerActions.highlightGeoObject({ object: highlightedObject! }));
-            this.map!.getCanvas().style.cursor = 'pointer';
-        } else {
-            // Reset if no valid feature is found
-            if (this.highlightedObject) {
-                this.store.dispatch(ExplorerActions.highlightGeoObject(null));
-                this.map!.getCanvas().style.cursor = '';
-            }
-        }
-    }, 5);
+    //     if (feature) {
+    //         const uri = feature.properties['uri'];
+    //         const highlightedObject = this.allGeoObjects().find(go => go.properties.uri === uri);
+    //         this.store.dispatch(ExplorerActions.highlightGeoObject({ object: highlightedObject! }));
+    //         this.map!.getCanvas().style.cursor = 'pointer';
+    //     } else {
+    //         // Reset if no valid feature is found
+    //         if (this.highlightedObject) {
+    //             this.store.dispatch(ExplorerActions.highlightGeoObject(null));
+    //             this.map!.getCanvas().style.cursor = '';
+    //         }
+    //     }
+    // }, 5);
 
     getSortedFeature(e: any): MapGeoJSONFeature[] {
         const features = this.map!.queryRenderedFeatures(e.point);
@@ -1053,31 +1077,31 @@ export class ExplorerComponent implements OnInit, OnDestroy, AfterViewInit {
     }
 
     handleMapClickEvent(e: any): void {
-        this.vectorLayers$.pipe(take(1)).subscribe(vectorLayers => {
+        // this.vectorLayers$.pipe(take(1)).subscribe(vectorLayers => {
 
-            // Clear the feature state of all vector layers
-            vectorLayers.forEach(layer => {
-                if (layer.enabled) {
-                    this.map!.removeFeatureState({ source: layer.id, sourceLayer: layer.sourceLayer });
-                }
-            })
+        //     // Clear the feature state of all vector layers
+        //     vectorLayers.forEach(layer => {
+        //         if (layer.enabled) {
+        //             this.map!.removeFeatureState({ source: layer.id, sourceLayer: layer.sourceLayer });
+        //         }
+        //     })
 
-            const features = this.getSortedFeature(e);
+        //     const features = this.getSortedFeature(e);
 
-            if (features.length > 0) {
-                const feature = features[0];
+        //     if (features.length > 0) {
+        //         const feature = features[0];
 
-                const source = this.map!.getSource(feature.source);
+        //         const source = this.map!.getSource(feature.source);
 
-                // Get the layer definition
-                if (source?.type === 'vector') {
-                }
-                else {
-                }
-            } else {
-                this.store.dispatch(ExplorerActions.selectGeoObject(null));
-            }
-        })
+        //         // Get the layer definition
+        //         if (source?.type === 'vector') {
+        //         }
+        //         else {
+        //         }
+        //     } else {
+        //         // this.store.dispatch(ExplorerActions.selectGeoObject(null));
+        //     }
+        // })
     }
 
     renderHighlights() {

@@ -6,21 +6,20 @@ import { GeoObject } from '../models/geoobject.model';
 import { Style, StyleConfig } from '../models/style.model';
 import { VectorLayer } from "../models/vector-layer.model";
 import { Configuration } from "../models/configuration.model";
-import { LocationPage } from "../models/chat.model";
+import { LocationPage, ZoneCollection } from "../models/chat.model";
 import { defaultStyles } from "../explorer/defaultQueries";
+import { Feature, LngLatBoundsLike } from "maplibre-gl";
 
 export const ExplorerActions = createActionGroup({
     source: 'explorer',
     events: {
-        'Add GeoObject': props<{ object: GeoObject }>(),
-        'Set Page': props<{
-            page: LocationPage,
-            zoomMap: boolean
-        }>(),
-        'Add Neighbor': props<{ object: GeoObject }>(),
-        'Set Neighbors': props<{ objects: GeoObject[], zoomMap: boolean }>(),
+        'Set Zones': props<{ collection: ZoneCollection }>(),
+        // 'Add GeoObject': props<{ object: GeoObject }>(),
+        'Set Page': props<{ page: LocationPage }>(),
+        // 'Add Neighbor': props<{ object: GeoObject }>(),
+        // 'Set Neighbors': props<{ objects: GeoObject[], zoomMap: number[] }>(),
         'Select GeoObject': props<{ object: GeoObject, zoomMap: boolean } | null>(),
-        'Highlight GeoObject': props<{ object: GeoObject } | null>(),
+        // 'Highlight GeoObject': props<{ object: GeoObject } | null>(),
         'Add Style': props<{ typeUri: string, style: Style }>(),
         'Set Styles': props<{ styles: StyleConfig }>(),
         'Set Vector Layer': props<{ layer: VectorLayer }>(),
@@ -38,6 +37,8 @@ export enum WorkflowStep {
 }
 
 export interface ExplorerStateModel {
+    zones: Feature[];
+    bbox: LngLatBoundsLike | null;
     neighbors: GeoObject[];
     styles: StyleConfig;
     selectedObject: GeoObject | null;
@@ -50,6 +51,8 @@ export interface ExplorerStateModel {
 }
 
 export const initialState: ExplorerStateModel = {
+    zones: [],
+    bbox: null,
     neighbors: [],
     styles: {},
     selectedObject: null,
@@ -57,9 +60,8 @@ export const initialState: ExplorerStateModel = {
     highlightedObject: null,
     vectorLayers: [],
     workflowStep: WorkflowStep.AiChatAndResults,
-    page: { 
+    page: {
         locations: [],
-        statement: "",
         limit: 100,
         offset: 0,
         count: 0
@@ -100,29 +102,38 @@ const resolveMissingStyles = (styles: StyleConfig, objects: GeoObject[]) => {
 export const explorerReducer = createReducer(
     initialState,
 
-    // Set all neighbors
-    on(ExplorerActions.setNeighbors, (state, { objects, zoomMap }) => {
-
-        const styles = resolveMissingStyles(state.styles, objects);
+    // Set zones displayed on the map
+    on(ExplorerActions.setZones, (state, { collection }) => {
 
         return {
             ...state,
-            styles: styles != null ? styles : state.styles,
-            neighbors: objects,
-            zoomMap: zoomMap,
+            zones: collection.features,
+            bbox: collection.bbox
         };
     }),
 
+    // // Set all neighbors
+    // on(ExplorerActions.setNeighbors, (state, { objects, zoomMap }) => {
+
+    //     const styles = resolveMissingStyles(state.styles, objects);
+
+    //     return {
+    //         ...state,
+    //         styles: styles != null ? styles : state.styles,
+    //         neighbors: objects,
+    //         zoomMap: zoomMap,
+    //     };
+    // }),
+
     // Set all geo objects
-    on(ExplorerActions.setPage, (state, { page, zoomMap }) => {
+    on(ExplorerActions.setPage, (state, { page }) => {
 
         const styles = resolveMissingStyles(state.styles, page.locations);
 
         return {
             ...state,
             styles: styles != null ? styles : state.styles,
-            page,
-            zoomMap
+            page
         };
     }),
 
@@ -132,7 +143,7 @@ export const explorerReducer = createReducer(
         let styles = state.styles
 
         if (object != null)
-            styles = resolveMissingStyles(state.styles, [ object ]) as StyleConfig;
+            styles = resolveMissingStyles(state.styles, [object]) as StyleConfig;
 
         return {
             ...state,
@@ -142,26 +153,26 @@ export const explorerReducer = createReducer(
         };
     }),
 
-    // Highlight geo object
-    on(ExplorerActions.highlightGeoObject, (state, { object }) => ({
-        ...state,
-        highlightedObject: object
-    })),
+    // // Highlight geo object
+    // on(ExplorerActions.highlightGeoObject, (state, { object }) => ({
+    //     ...state,
+    //     highlightedObject: object
+    // })),
 
-    // Add Neighbor
-    on(ExplorerActions.addNeighbor, (state, { object }) => ({
-        ...state,
-        neighbors: [...state.neighbors, object]
-    })),
+    // // Add Neighbor
+    // on(ExplorerActions.addNeighbor, (state, { object }) => ({
+    //     ...state,
+    //     neighbors: [...state.neighbors, object]
+    // })),
 
-    // Add geo object
-    on(ExplorerActions.addGeoObject, (state, { object }) => ({
-        ...state,
-        page: {
-            ...state.page,
-            locations: [...state.page.locations, object]
-        }
-    })),
+    // // Add geo object
+    // on(ExplorerActions.addGeoObject, (state, { object }) => ({
+    //     ...state,
+    //     page: {
+    //         ...state.page,
+    //         locations: [...state.page.locations, object]
+    //     }
+    // })),
 
     // Add style
     on(ExplorerActions.addStyle, (state, { typeUri, style }) => ({
@@ -203,11 +214,19 @@ export const explorerReducer = createReducer(
         workflowStep: step,
         workflowData: data
     })),
-    
+
 );
 
 
 const selector = createFeatureSelector<ExplorerStateModel>('explorer');
+
+export const getZones = createSelector(selector, (s) => {
+    return s.zones;
+});
+
+export const getBbox = createSelector(selector, (s) => {
+    return s.bbox;
+});
 
 export const getObjects = createSelector(selector, (s) => {
     return s.page.locations;

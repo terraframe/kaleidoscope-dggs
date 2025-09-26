@@ -50,7 +50,7 @@ public class LocationController
   @ResponseBody
   public ResponseEntity<LocationPage> fullTextLookup(@RequestBody QueryRequest request)
   {
-    LocationPage locations = this.jena.fullTextLookup(request.getQuery(), request.getOffset(), request.getLimit());
+    LocationPage locations = this.jena.fullTextLookup(request.getQuery());
 
     return new ResponseEntity<LocationPage>(locations, HttpStatus.OK);
   }
