@@ -31,7 +31,7 @@ import org.springframework.stereotype.Service;
 
 import ai.terraframe.kaleidoscope.dggs.core.config.AppProperties;
 import ai.terraframe.kaleidoscope.dggs.core.model.bedrock.BedrockResponse;
-import ai.terraframe.kaleidoscope.dggs.core.model.bedrock.FollowUpResponse;
+import ai.terraframe.kaleidoscope.dggs.core.model.bedrock.InformationResponse;
 import ai.terraframe.kaleidoscope.dggs.core.model.bedrock.ToolUseResponse;
 import ai.terraframe.kaleidoscope.dggs.core.model.dggs.Collection;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
@@ -146,7 +146,7 @@ public class BedrockConverseService
             {
               String text = response.output().message().content().get(0).text();
 
-              future.complete(new FollowUpResponse(text));
+              future.complete(new InformationResponse(text));
             }
           }
           else

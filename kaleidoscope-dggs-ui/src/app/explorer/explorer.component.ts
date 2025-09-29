@@ -20,11 +20,9 @@ import { ResultsTableComponent } from '../results-table/results-table.component'
 import { ConfigurationService } from '../service/configuration-service.service';
 import { defaultQueries, SELECTED_COLOR, HOVER_COLOR } from './defaultQueries';
 import { AllGeoJSON, bbox, bboxPolygon, center, union } from '@turf/turf';
-import { ExplorerService } from '../service/explorer.service';
 import { ErrorService } from '../service/error-service.service';
 import { ExplorerActions, getNeighbors, getObjects, getStyles, getVectorLayers, getZoomMap, highlightedObject, selectedObject, getWorkflowStep, WorkflowStep, getPage, getZones, getBbox, getWorkflowData } from '../state/explorer.state';
 import { TabsModule } from 'primeng/tabs';
-import { debounce } from 'lodash';
 import { VectorLayer } from '../models/vector-layer.model';
 import { environment } from '../../environments/environment';
 import { faArrowLeft, faArrowRight, faDownLeftAndUpRightToCenter, faUpRightAndDownLeftFromCenter } from '@fortawesome/free-solid-svg-icons';
@@ -34,6 +32,7 @@ import { ChatMessage, LocationPage } from '../models/chat.model';
 import { TooltipModule } from 'primeng/tooltip';
 import { ChatActions } from '../state/chat.state';
 import { ChatService } from '../service/chat-service.service';
+import { MessageService } from '../service/message.service';
 
 export interface TypeLegend { [key: string]: { label: string, color: string, visible: boolean, included: boolean } }
 
@@ -163,6 +162,7 @@ export class ExplorerComponent implements OnInit, OnDestroy, AfterViewInit {
     constructor(
         private configurationService: ConfigurationService,
         private chatService: ChatService,
+        private messageService: MessageService,
         private errorService: ErrorService
     ) {
 
@@ -296,36 +296,21 @@ export class ExplorerComponent implements OnInit, OnDestroy, AfterViewInit {
 
         this.workflowData$.pipe(take(1)).subscribe(data => {
 
-            this.chatService.zones(this.selectedObject!.properties.uri, data.category).then((message) => {
-
-                if (message.type === 'ZONES') {
-                    if (message.collection != null) {
-                        this.store.dispatch(ExplorerActions.setZones({ collection: message.collection }));
-                    }
+            this.chatService.zones(this.selectedObject!.properties.uri, data.category)
+                .then((message) => this.messageService.process(system, message))
+                .catch((error: any) => {
+                    this.errorService.handleError(error)
 
                     this.store.dispatch(ChatActions.updateMessage({
                         ...system,
-                        text: "See on map!",
+                        text: 'An error occurred',
                         loading: false,
-                        data: message.collection
+                        purpose: 'info'
                     }));
-                }
 
-                this.store.dispatch(ExplorerActions.setWorkflowStep({ step: WorkflowStep.AiChatAndResults }));
-
-            }).catch((error: any) => {
-                this.errorService.handleError(error)
-
-                this.store.dispatch(ChatActions.updateMessage({
-                    ...system,
-                    text: 'An error occurred',
-                    loading: false,
-                    purpose: 'info'
-                }));
-
-            }).finally(() => {
-                this.loading = false;
-            })
+                }).finally(() => {
+                    this.loading = false;
+                })
         });
     }
 

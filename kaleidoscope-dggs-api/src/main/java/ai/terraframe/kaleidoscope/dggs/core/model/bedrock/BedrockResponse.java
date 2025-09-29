@@ -3,7 +3,7 @@ package ai.terraframe.kaleidoscope.dggs.core.model.bedrock;
 public abstract class BedrockResponse
 {
   public static enum Type {
-    TOOL_USE, FOLLOW_UP
+    TOOL_USE, INFORMATION
   }
 
   public abstract Type getType();

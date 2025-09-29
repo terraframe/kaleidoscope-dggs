@@ -17,7 +17,7 @@
              <div class="dot-pulse-container"><div style="margin-left:16px; margin-right: 16px;" class="dot-pulse"></div></div>
           </ng-container>
           <ng-container *ngIf="!msg.loading">
-            {{msg.text}}
+            <div class="preserve-newlines">{{msg.text}}</div>
                         
             <div class="action ambiguous" *ngIf="msg.ambiguous && last">
               <br />

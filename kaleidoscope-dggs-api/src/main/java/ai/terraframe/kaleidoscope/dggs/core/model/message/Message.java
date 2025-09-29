@@ -3,7 +3,7 @@ package ai.terraframe.kaleidoscope.dggs.core.model.message;
 public abstract class Message
 {
   public static enum Type {
-    ZONES, DISAMBIGUATE
+    ZONES, DISAMBIGUATE, BASIC
   }
 
   public abstract Type getType();

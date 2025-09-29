@@ -42,5 +42,6 @@ export interface Message {
   collection?: ZoneCollection;
   page?: LocationPage;
   category?: string;
+  content?: string;
 }
 

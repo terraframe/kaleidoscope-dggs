@@ -18,7 +18,7 @@ import { ExplorerActions, getWorkflowData, getWorkflowStep, WorkflowStep } from 
 import { ExplorerService } from '../service/explorer.service';
 import { GeoObject } from '../models/geoobject.model';
 import { debounce } from 'lodash';
-import { MessageService } from 'primeng/api';
+import { MessageService } from '../service/message.service';
 
 @Component({
   selector: 'aichat',
@@ -52,6 +52,7 @@ export class AichatComponent {
 
   constructor(
     private chatService: ChatService,
+    private messageService: MessageService,
     private errorService: ErrorService) {
 
     this.onMessagesChange = this.messages$.subscribe(messages => {
@@ -106,56 +107,21 @@ export class AichatComponent {
 
         this.loading = true;
 
-        this.chatService.query(message.text).then((message) => {
-
-          if (message.type === 'ZONES') {
-            if (message.collection != null) {
-              this.store.dispatch(ExplorerActions.setZones({ collection: message.collection }));
-            }
+        this.chatService.query(message.text)
+          .then((message) => this.messageService.process(system, message))
+          .catch(error => {
+            this.errorService.handleError(error)
 
             this.store.dispatch(ChatActions.updateMessage({
               ...system,
-              text: "See on map!",
+              text: 'An error occurred',
               loading: false,
-              data: message.collection
+              purpose: 'info'
             }));
-          }
 
-          if (message.type === 'DISAMBIGUATE') {
-            if (message.page != null) {
-              this.store.dispatch(ExplorerActions.setPage({ page: message.page }));
-              this.store.dispatch(ExplorerActions.setWorkflowStep({
-                step: WorkflowStep.DisambiguateObject, data: {
-                  category: message.category
-                }
-              }));
-              this.store.dispatch(ExplorerActions.selectGeoObject(null));
-            }
-
-            this.store.dispatch(ChatActions.updateMessage({
-              ...system,
-              text: "There are multiple locations",
-              loading: false,
-              ambiguous: true,
-              data: {
-                page: message.page,
-                category: message.category
-              }
-            }));
-          }
-        }).catch(error => {
-          this.errorService.handleError(error)
-
-          this.store.dispatch(ChatActions.updateMessage({
-            ...system,
-            text: 'An error occurred',
-            loading: false,
-            purpose: 'info'
-          }));
-
-        }).finally(() => {
-          this.loading = false;
-        })
+          }).finally(() => {
+            this.loading = false;
+          })
       });
     }
   }

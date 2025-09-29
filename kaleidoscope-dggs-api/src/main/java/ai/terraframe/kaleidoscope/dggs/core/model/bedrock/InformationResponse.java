@@ -9,13 +9,13 @@ import lombok.NoArgsConstructor;
 @EqualsAndHashCode(callSuper = false)
 @AllArgsConstructor
 @NoArgsConstructor
-public class FollowUpResponse extends BedrockResponse
+public class InformationResponse extends BedrockResponse
 {
   private String content;
 
   @Override
   public Type getType()
   {
-    return Type.FOLLOW_UP;
+    return Type.INFORMATION;
   }
 }

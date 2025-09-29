@@ -30,10 +30,12 @@ import ai.terraframe.kaleidoscope.dggs.core.model.Location;
 import ai.terraframe.kaleidoscope.dggs.core.model.LocationPage;
 import ai.terraframe.kaleidoscope.dggs.core.model.ZoneCollection;
 import ai.terraframe.kaleidoscope.dggs.core.model.bedrock.BedrockResponse;
+import ai.terraframe.kaleidoscope.dggs.core.model.bedrock.InformationResponse;
 import ai.terraframe.kaleidoscope.dggs.core.model.bedrock.ToolUseResponse;
 import ai.terraframe.kaleidoscope.dggs.core.model.dggs.Collection;
 import ai.terraframe.kaleidoscope.dggs.core.model.dggs.Dggr;
 import ai.terraframe.kaleidoscope.dggs.core.model.dggs.Zones;
+import ai.terraframe.kaleidoscope.dggs.core.model.message.BasicMessage;
 import ai.terraframe.kaleidoscope.dggs.core.model.message.DisambiguateMessage;
 import ai.terraframe.kaleidoscope.dggs.core.model.message.Message;
 import ai.terraframe.kaleidoscope.dggs.core.model.message.ZoneMessage;
@@ -86,6 +88,12 @@ public class ChatService
         Location location = page.getLocations().get(0);
 
         return zones(collectionId, location);
+      }
+      else if (message.getType().equals(BedrockResponse.Type.INFORMATION))
+      {
+        String content = message.asType(InformationResponse.class).getContent();
+
+        return new BasicMessage(content);
       }
 
       throw new UnsupportedOperationException();
