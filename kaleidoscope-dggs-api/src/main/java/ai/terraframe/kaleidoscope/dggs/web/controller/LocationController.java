@@ -31,6 +31,10 @@ import org.springframework.web.bind.annotation.RestController;
 import com.google.gson.JsonArray;
 
 import ai.terraframe.kaleidoscope.dggs.core.model.LocationPage;
+import ai.terraframe.kaleidoscope.dggs.core.model.dggs.Collection;
+import ai.terraframe.kaleidoscope.dggs.core.model.dggs.Dggr;
+import ai.terraframe.kaleidoscope.dggs.core.service.CollectionService;
+import ai.terraframe.kaleidoscope.dggs.core.service.DggrService;
 import ai.terraframe.kaleidoscope.dggs.core.service.JenaService;
 import ai.terraframe.kaleidoscope.dggs.core.service.RemoteDggsServiceIF;
 import ai.terraframe.kaleidoscope.dggs.web.model.QueryRequest;
@@ -41,7 +45,13 @@ public class LocationController
 {
 
   @Autowired
-  private JenaService       jena;
+  private JenaService         jena;
+
+  @Autowired
+  private CollectionService   collectionService;
+
+  @Autowired
+  private DggrService         dggrService;
 
   @Autowired
   private RemoteDggsServiceIF service;
@@ -63,7 +73,10 @@ public class LocationController
       @RequestParam(defaultValue = "ISEA3H") String dggrsId, //
       @RequestParam(name = "zone-depth", defaultValue = "7") Integer zoneDepth) throws IOException, InterruptedException
   {
-    JsonArray data = this.service.data(collectionId, dggrsId, zoneId, zoneDepth);
+    Collection collection = this.collectionService.getOrThrow(collectionId);
+    Dggr dggr = this.dggrService.getOrThrow(collectionId);
+
+    JsonArray data = this.service.data(collection, dggr, zoneId, zoneDepth);
 
     return ResponseEntity.ok(data.toString());
   }

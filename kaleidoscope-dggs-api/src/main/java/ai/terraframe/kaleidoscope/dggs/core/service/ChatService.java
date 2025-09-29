@@ -16,6 +16,7 @@
 package ai.terraframe.kaleidoscope.dggs.core.service;
 
 import java.io.IOException;
+import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,6 +31,8 @@ import ai.terraframe.kaleidoscope.dggs.core.model.LocationPage;
 import ai.terraframe.kaleidoscope.dggs.core.model.ZoneCollection;
 import ai.terraframe.kaleidoscope.dggs.core.model.bedrock.BedrockResponse;
 import ai.terraframe.kaleidoscope.dggs.core.model.bedrock.ToolUseResponse;
+import ai.terraframe.kaleidoscope.dggs.core.model.dggs.Collection;
+import ai.terraframe.kaleidoscope.dggs.core.model.dggs.Dggr;
 import ai.terraframe.kaleidoscope.dggs.core.model.dggs.Zones;
 import ai.terraframe.kaleidoscope.dggs.core.model.message.DisambiguateMessage;
 import ai.terraframe.kaleidoscope.dggs.core.model.message.Message;
@@ -38,9 +41,7 @@ import ai.terraframe.kaleidoscope.dggs.core.model.message.ZoneMessage;
 @Service
 public class ChatService
 {
-  private static final Logger    log      = LoggerFactory.getLogger(ChatService.class);
-
-  public static String           DGGRS_ID = "ISEA3H";
+  private static final Logger    log = LoggerFactory.getLogger(ChatService.class);
 
   @Autowired
   private BedrockConverseService bedrock;
@@ -51,17 +52,25 @@ public class ChatService
   @Autowired
   private RemoteDggsServiceIF    dggs;
 
+  @Autowired
+  private CollectionService      collectionService;
+
+  @Autowired
+  private DggrService            dggrService;
+
   public Message query(String inputText)
   {
 
     try
     {
-      BedrockResponse message = this.bedrock.getLocationFromText(inputText);
+      List<Collection> collections = this.collectionService.getAll();
+
+      BedrockResponse message = this.bedrock.getLocationFromText(collections, inputText);
 
       if (message.getType().equals(BedrockResponse.Type.TOOL_USE))
       {
         String locationName = message.asType(ToolUseResponse.class).getLocationName();
-        String category = message.asType(ToolUseResponse.class).getCategory();
+        String collectionId = message.asType(ToolUseResponse.class).getCategory();
 
         LocationPage page = this.jena.fullTextLookup(locationName);
 
@@ -71,12 +80,12 @@ public class ChatService
         }
         else if (page.getCount() > 1)
         {
-          return new DisambiguateMessage(page, category);
+          return new DisambiguateMessage(page, collectionId);
         }
 
         Location location = page.getLocations().get(0);
 
-        return zones(category, location);
+        return zones(collectionId, location);
       }
 
       throw new UnsupportedOperationException();
@@ -93,14 +102,14 @@ public class ChatService
     }
   }
 
-  public Message zones(String uri, String category)
+  public Message zones(String uri, String collectionId)
   {
 
     try
     {
       Location location = this.jena.getLocation(uri);
 
-      return zones(category, location);
+      return zones(collectionId, location);
     }
     catch (GenericRestException e)
     {
@@ -114,17 +123,19 @@ public class ChatService
     }
   }
 
-  private Message zones(String category, Location location) throws IOException, InterruptedException
+  private Message zones(String collectionId, Location location) throws IOException, InterruptedException
   {
-    String collectionId = this.dggs.getCollectionId(category);
+    Collection collection = this.collectionService.getOrThrow(collectionId);
 
-    Zones zones = this.dggs.zones(collectionId, DGGRS_ID, 9, location);
+    Dggr dggr = this.dggrService.get(collectionId).orElseThrow(() -> new GenericRestException("Unabled to retrieve DGGR information for collection [" + collectionId + "]"));
+
+    Zones zones = this.dggs.zones(collection, dggr, 9, location);
 
     if (zones.getZones().size() > 0)
     {
       String zoneId = zones.getZones().get(0);
 
-      JsonArray features = this.dggs.data(collectionId, DGGRS_ID, zoneId, 3);
+      JsonArray features = this.dggs.data(collection, dggr, zoneId, 3);
 
       return new ZoneMessage(new ZoneCollection(location.getGeometry().getEnvelopeInternal(), features));
     }

@@ -41,11 +41,11 @@ export class AttributePanelComponent implements OnDestroy {
   selectObject(object: GeoObject | null) {
     if (this.geoObject != null && object != null && this.geoObject.properties.uri === object.properties.uri) return;
 
-    if (object != null) {
-      this.explorerService.getAttributes(object.properties.uri)
-        .then(geoObject => this.geoObject = geoObject)
-        .catch(error => this.errorService.handleError(error))
-    }
+    // if (object != null) {
+    //   this.explorerService.getAttributes(object.properties.uri)
+    //     .then(geoObject => this.geoObject = geoObject)
+    //     .catch(error => this.errorService.handleError(error))
+    // }
 
     this.geoObject = object;
   }

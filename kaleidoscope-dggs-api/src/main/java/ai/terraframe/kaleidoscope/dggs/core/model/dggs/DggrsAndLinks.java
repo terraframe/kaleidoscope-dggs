@@ -9,13 +9,10 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class Zones
+public class DggrsAndLinks
 {
-  private List<LinkTemplate> linkTemplates;
+  private List<Link> links;
 
-  private List<Link>         links;
+  private List<Dggr> dggrs;
 
-  private List<String>       zones;
-
-  private Double             returnedAreaMetersSquare;
 }

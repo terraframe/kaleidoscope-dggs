@@ -9,15 +9,15 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class Link
 {
-  private String rel;
+  private String  href;
 
-  private String href;
+  private String  rel;
 
-  private String title;
+  private String  type;
 
-  @Override
-  public String toString()
-  {
-    return "Link{" + "rel=" + rel + ", href=" + href + ", title=" + title + '}';
-  }
+  private String  hreflang;
+
+  private String  title;
+
+  private Integer length;
 }

@@ -7,12 +7,10 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class LinkTemplate
+public class Extent
 {
-  private String uriTemplate;
+  private Spatial  spatial;
 
-  private String rel;
-
-  private String title;
+  private Temporal temporal;
 
 }

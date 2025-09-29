@@ -37,7 +37,7 @@ export class ChatService {
     return firstValueFrom(this.http.get<Message>(environment.apiUrl + 'api/chat/query', { params }));
   }
 
-  zones(uri: string | undefined, category: string): Promise<Message> {
+  zones(uri: string, category: string): Promise<Message> {
 
     // if (environment.mockRequests)
     // {
@@ -51,11 +51,7 @@ export class ChatService {
     // {
     // Uncomment below to make a real HTTP request
     let params = new HttpParams();
-
-    if (uri) {
-      params = params.append("uri", uri);
-    }
-
+    params = params.append("uri", uri);
     params = params.append("category", category);
 
     return firstValueFrom(this.http.get<Message>(environment.apiUrl + 'api/chat/zones', { params }));

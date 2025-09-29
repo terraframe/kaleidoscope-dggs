@@ -19,7 +19,7 @@
                         (click)="onClick(object)" (mouseenter)="onRowHover(object)">
                         <td>{{ object.properties.label }}</td>
                         <td>{{ object.properties.code }}</td>
-                        <td>{{ object.properties.type.split("rdfs#")[1] }}</td>
+                        <td>{{ object.properties.type.split("#")[1] }}</td>
                         <!-- <td>{{ object.properties.uri }}</td> -->
 
                     </tr>

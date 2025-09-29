@@ -1,0 +1,19 @@
+package ai.terraframe.kaleidoscope.dggs.core.model.dggs;
+
+import java.util.List;
+
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+
+import ai.terraframe.kaleidoscope.dggs.core.serialization.IntervalDeserializer;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class Temporal
+{
+  @JsonDeserialize(contentUsing = IntervalDeserializer.class)
+  private List<Interval> interval;
+}

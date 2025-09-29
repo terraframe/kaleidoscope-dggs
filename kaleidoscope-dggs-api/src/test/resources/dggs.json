@@ -1,0 +1,146 @@
+{
+    "dggrs": [
+        {
+            "links": [
+                {
+                    "rel": "self",
+                    "href": "/api/dggs/collections/winnipeg-dem/dggs/GNOSISGlobalGrid",
+                    "title": "GNOSISGlobalGrid DGGRS for Winnipag DEM"
+                },
+                {
+                    "rel": "[ogc-rel:dggrs-definition]",
+                    "href": "/api/dggs/dggrs/GNOSISGlobalGrid",
+                    "title": "GNOSISGlobalGrid DGGRS definition"
+                }
+            ],
+            "id": "GNOSISGlobalGrid",
+            "title": "GNOSIS Global Grid",
+            "uri": "[ogc-dggrs:GNOSISGlobalGrid]"
+        },
+        {
+            "links": [
+                {
+                    "rel": "self",
+                    "href": "/api/dggs/collections/winnipeg-dem/dggs/ISEA9R",
+                    "title": "ISEA9R DGGRS for Winnipag DEM"
+                },
+                {
+                    "rel": "[ogc-rel:dggrs-definition]",
+                    "href": "/api/dggs/dggrs/ISEA9R",
+                    "title": "ISEA9R DGGRS definition"
+                }
+            ],
+            "id": "ISEA9R",
+            "title": "ISEA Aperture 9 Rhombic",
+            "uri": "[ogc-dggrs:ISEA9R]"
+        },
+        {
+            "links": [
+                {
+                    "rel": "self",
+                    "href": "/api/dggs/collections/winnipeg-dem/dggs/ISEA3H",
+                    "title": "ISEA3H DGGRS for Winnipag DEM"
+                },
+                {
+                    "rel": "[ogc-rel:dggrs-definition]",
+                    "href": "/api/dggs/dggrs/ISEA3H",
+                    "title": "ISEA3H DGGRS definition"
+                }
+            ],
+            "id": "ISEA3H",
+            "title": "ISEA Aperture 3 Hexagonal",
+            "uri": "[ogc-dggrs:ISEA3H]"
+        },
+        {
+            "links": [
+                {
+                    "rel": "self",
+                    "href": "/api/dggs/collections/winnipeg-dem/dggs/IVEA9R",
+                    "title": "IVEA9R DGGRS for Winnipag DEM"
+                },
+                {
+                    "rel": "[ogc-rel:dggrs-definition]",
+                    "href": "/api/dggs/dggrs/IVEA9R",
+                    "title": "IVEA9R DGGRS definition"
+                }
+            ],
+            "id": "IVEA9R",
+            "title": "IVEA Aperture 9 Rhombic",
+            "uri": "[ogc-dggrs:IVEA9R]"
+        },
+        {
+            "links": [
+                {
+                    "rel": "self",
+                    "href": "/api/dggs/collections/winnipeg-dem/dggs/IVEA3H",
+                    "title": "IVEA3H DGGRS for Winnipag DEM"
+                },
+                {
+                    "rel": "[ogc-rel:dggrs-definition]",
+                    "href": "/api/dggs/dggrs/IVEA3H",
+                    "title": "IVEA3H DGGRS definition"
+                }
+            ],
+            "id": "IVEA3H",
+            "title": "IVEA Aperture 3 Hexagonal",
+            "uri": "[ogc-dggrs:IVEA3H]"
+        },
+        {
+            "links": [
+                {
+                    "rel": "self",
+                    "href": "/api/dggs/collections/winnipeg-dem/dggs/RTEA9R",
+                    "title": "RTEA9R DGGRS for Winnipag DEM"
+                },
+                {
+                    "rel": "[ogc-rel:dggrs-definition]",
+                    "href": "/api/dggs/dggrs/RTEA9R",
+                    "title": "RTEA9R DGGRS definition"
+                }
+            ],
+            "id": "RTEA9R",
+            "title": "RTEA Aperture 9 Rhombic",
+            "uri": "[ogc-dggrs:RTEA9R]"
+        },
+        {
+            "links": [
+                {
+                    "rel": "self",
+                    "href": "/api/dggs/collections/winnipeg-dem/dggs/RTEA3H",
+                    "title": "RTEA3H DGGRS for Winnipag DEM"
+                },
+                {
+                    "rel": "[ogc-rel:dggrs-definition]",
+                    "href": "/api/dggs/dggrs/RTEA3H",
+                    "title": "RTEA3H DGGRS definition"
+                }
+            ],
+            "id": "RTEA3H",
+            "title": "RTEA Aperture 3 Hexagonal",
+            "uri": "[ogc-dggrs:RTEA3H]"
+        },
+        {
+            "links": [
+                {
+                    "rel": "self",
+                    "href": "/api/dggs/collections/winnipeg-dem/dggs/rHEALPix",
+                    "title": "rHEALPix DGGRS for Winnipag DEM"
+                },
+                {
+                    "rel": "[ogc-rel:dggrs-definition]",
+                    "href": "/api/dggs/dggrs/rHEALPix",
+                    "title": "rHEALPix DGGRS definition"
+                }
+            ],
+            "id": "rHEALPix",
+            "title": "rHEALPix",
+            "uri": "[ogc-dggrs:rHEALPix]"
+        }
+    ],
+    "links": [
+        {
+            "rel": "[ogc-rel:geodata]",
+            "href": "/api/dggs/collections/winnipeg-dem"
+        }
+    ]
+}

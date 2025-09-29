@@ -1,0 +1,130 @@
+{
+    "collections": [
+        {
+            "extent": {
+                "spatial": {
+                    "bbox": [
+                        [
+                            -103.16666818,
+                            48.4999997,
+                            -93.83333522,
+                            52.08333289
+                        ]
+                    ]
+                },
+                "temporal": {
+                    "interval": [
+                        [
+                            "2020-01-17T00:00:00Z",
+                            "2100-01-17T00:00:00Z"
+                        ]
+                    ]
+                }
+            },
+            "description": "Temperature - ANUSPLIN interpolated Canada daily 300 arc second climate grids",
+            "minCellSize": 0.08333333000000004,
+            "links": [
+                {
+                    "rel": "self",
+                    "href": "/api/dggs/collections/manitoba-tm?f=json",
+                    "type": "application/json",
+                    "title": "Manitoba Temperature Projection (as JSON)"
+                },
+                {
+                    "rel": "alternate",
+                    "href": "/api/dggs/collections/manitoba-tm?f=html",
+                    "type": "text/html",
+                    "title": "Manitoba Temperature Projection (as HTML)"
+                }
+            ],
+            "id": "manitoba-tm",
+            "title": "Manitoba Temperature Projection"
+        },
+        {
+            "extent": {
+                "spatial": {
+                    "bbox": [
+                        [
+                            -103.33333484,
+                            48.41666637,
+                            -94.00000188,
+                            51.91666623
+                        ]
+                    ]
+                },
+                "temporal": {
+                    "interval": [
+                        [
+                            "2020-01-17T00:00:00Z",
+                            "2100-01-17T00:00:00Z"
+                        ]
+                    ]
+                }
+            },
+            "description": "Precipitation - ANUSPLIN interpolated Canada daily 300 arc second climate grids",
+            "minCellSize": 0.08333332999999984,
+            "links": [
+                {
+                    "rel": "self",
+                    "href": "/api/dggs/collections/manitoba-pr?f=json",
+                    "type": "application/json",
+                    "title": "Manitoba Precipitation Projection (as JSON)"
+                },
+                {
+                    "rel": "alternate",
+                    "href": "/api/dggs/collections/manitoba-pr?f=html",
+                    "type": "text/html",
+                    "title": "Manitoba Precipitation Projection (as HTML)"
+                }
+            ],
+            "id": "manitoba-pr",
+            "title": "Manitoba Precipitation Projection"
+        },
+        {
+            "extent": {
+                "spatial": {
+                    "bbox": [
+                        [
+                            -97.25006845149304,
+                            49.50002855009702,
+                            -96.60009500538754,
+                            50.05004316515053
+                        ]
+                    ]
+                }
+            },
+            "description": "Winnipeg DEM (raster)",
+            "minCellSize": 0.000916691025089177,
+            "links": [
+                {
+                    "rel": "self",
+                    "href": "/api/dggs/collections/winnipeg-dem?f=json",
+                    "type": "application/json",
+                    "title": "Winnipeg DEM (as JSON)"
+                },
+                {
+                    "rel": "alternate",
+                    "href": "/api/dggs/collections/winnipeg-dem?f=html",
+                    "type": "text/html",
+                    "title": "Winnipeg DEM (as HTML)"
+                }
+            ],
+            "id": "winnipeg-dem",
+            "title": "Winnipeg DEM"
+        }
+    ],
+    "links": [
+        {
+            "rel": "self",
+            "href": "https://ogc-dggs-testing.fmecloud.com/api/dggs/collections?f=json",
+            "type": "application/json",
+            "title": "This document"
+        },
+        {
+            "rel": "alternate",
+            "href": "https://ogc-dggs-testing.fmecloud.com/api/dggs/collections?f=html",
+            "type": "text/html",
+            "title": "This document as HTML"
+        }
+    ]
+}

@@ -1,0 +1,29 @@
+{
+    "linkTemplates": [
+        {
+            "uriTemplate": "/api/dggs/collections/winnipeg-dem/dggs/ISEA3H/zones/{zoneId}/data",
+            "rel": "[ogc-rel:dggrs-zone-data]",
+            "title": "ISEA3H DGGS for Winnipeg DEM"
+        }
+    ],
+    "links": [
+        {
+            "rel": "[ogc-rel:dggrs]",
+            "href": "/api/dggs/collections/winnipeg-dem/dggs/ISEA3H",
+            "title": "ISEA3H DGGS for Winnipeg DEM"
+        },
+        {
+            "rel": "[ogc-rel:dggrs-definition]",
+            "href": "/api/dggs/dggrs/ISEA3H",
+            "title": "ISEA3H DGGRS definition"
+        },
+        {
+            "rel": "[ogc-rel:geodata]",
+            "href": "/api/dggs/collections/winnipeg-dem"
+        }
+    ],
+    "zones": [
+        "E0-1058-D"
+    ],
+    "returnedAreaMetersSquare": null
+}

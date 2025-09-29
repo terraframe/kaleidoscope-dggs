@@ -1,11 +1,3 @@
-# Agent ID and version alias ID of the bedrock agent responsible for chat responses
-bedrock.chat.agent.id=
-bedrock.chat.agent.alias.id=
-
-# Agent ID and version alias ID of the bedrock agent responsible for generating location SPARQL
-bedrock.sparql.agent.id=
-bedrock.sparql.agent.alias.id=
-
 # AWS region of the bedrock agents
 bedrock.region=
 

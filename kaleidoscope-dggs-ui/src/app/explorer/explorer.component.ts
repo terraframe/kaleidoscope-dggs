@@ -79,9 +79,8 @@ export class ExplorerComponent implements OnInit, OnDestroy, AfterViewInit {
 
     zoomMap$: Observable<boolean> = this.store.select(getZoomMap);
 
-    // geoObjects$: Observable<GeoObject[]> = this.store.select(getObjects);
+    geoObjects: GeoObject[] = [];
 
-    // geoObjects: GeoObject[] = [];
 
     // renderedObjects: string[] = [];
 
@@ -206,9 +205,15 @@ export class ExplorerComponent implements OnInit, OnDestroy, AfterViewInit {
             this.chatMinimized = step == WorkflowStep.MinimizeChat;
         });
 
-        this.onPageChange = this.page$.subscribe(page => {
-            this.page = page;
-        });
+        this.onPageChange = this.page$
+            .pipe(withLatestFrom(this.styles$, this.zoomMap$))
+            .subscribe(([page, styles, zoomMap]) => {
+                this.page = page;
+                this.geoObjects = page.locations;
+                this.resolvedStyles = styles;
+
+                this.render();
+            });
 
         this.zones$.subscribe(zones => {
 
@@ -218,8 +223,10 @@ export class ExplorerComponent implements OnInit, OnDestroy, AfterViewInit {
                     features: zones
                 }
 
-                const source = this.map?.getSource('data') as GeoJSONSource;
+                const source = this.map!.getSource('data') as GeoJSONSource;
                 source.setData(geojson);
+
+                console.log('Set data')
             }
         })
 
@@ -265,64 +272,61 @@ export class ExplorerComponent implements OnInit, OnDestroy, AfterViewInit {
             }
         }));
 
-        if (this.selectedObject != null) {
+        const message: ChatMessage = {
+            id: uuidv4(),
+            sender: 'user',
+            text: this.selectedObject!.properties.code,
+            loading: false,
+            purpose: 'standard'
+        };
 
-            const message: ChatMessage = {
-                id: uuidv4(),
-                sender: 'user',
-                text: this.selectedObject?.properties.code,
-                loading: false,
-                purpose: 'standard'
-            };
+        this.store.dispatch(ChatActions.addMessage(message));
 
-            this.store.dispatch(ChatActions.addMessage(message));
+        const system: ChatMessage = {
+            id: uuidv4(),
+            sender: 'system',
+            text: '',
+            loading: true,
+            purpose: 'standard'
+        };
 
-            const system: ChatMessage = {
-                id: uuidv4(),
-                sender: 'system',
-                text: '',
-                loading: true,
-                purpose: 'standard'
-            };
+        this.store.dispatch(ChatActions.addMessage(system));
 
-            this.store.dispatch(ChatActions.addMessage(system));
+        this.loading = true;
 
-            this.loading = true;
+        this.workflowData$.pipe(take(1)).subscribe(data => {
 
-            this.workflowData$.pipe(take(1)).subscribe(data => {
+            this.chatService.zones(this.selectedObject!.properties.uri, data.category).then((message) => {
 
-                this.chatService.zones(this.selectedObject?.properties.uri, data.category).then((message) => {
-
-                    if (message.type === 'ZONES') {
-                        if (message.collection != null) {
-                            this.store.dispatch(ExplorerActions.setZones({ collection: message.collection }));
-                        }
-
-                        this.store.dispatch(ChatActions.updateMessage({
-                            ...system,
-                            text: "See on map!",
-                            loading: false,
-                            data: message.collection
-                        }));
+                if (message.type === 'ZONES') {
+                    if (message.collection != null) {
+                        this.store.dispatch(ExplorerActions.setZones({ collection: message.collection }));
                     }
-
-                    this.store.dispatch(ExplorerActions.setWorkflowStep({ step: WorkflowStep.AiChatAndResults }));
-
-                }).catch((error: any) => {
-                    this.errorService.handleError(error)
 
                     this.store.dispatch(ChatActions.updateMessage({
                         ...system,
-                        text: 'An error occurred',
+                        text: "See on map!",
                         loading: false,
-                        purpose: 'info'
+                        data: message.collection
                     }));
+                }
 
-                }).finally(() => {
-                    this.loading = false;
-                })
-            });
-        }
+                this.store.dispatch(ExplorerActions.setWorkflowStep({ step: WorkflowStep.AiChatAndResults }));
+
+            }).catch((error: any) => {
+                this.errorService.handleError(error)
+
+                this.store.dispatch(ChatActions.updateMessage({
+                    ...system,
+                    text: 'An error occurred',
+                    loading: false,
+                    purpose: 'info'
+                }));
+
+            }).finally(() => {
+                this.loading = false;
+            })
+        });
     }
 
     minimizeChat() {
@@ -346,23 +350,23 @@ export class ExplorerComponent implements OnInit, OnDestroy, AfterViewInit {
 
     render(): void {
         if (this.initialized) {
-            // // Clear the map
-            // this.clearAllMapData();
+            // Clear the map
+            this.clearAllMapData();
 
-            // // Handle the geo objects
-            // const types = Object.keys(this.geoObjectsByType());
+            // Handle the geo objects
+            const types = Object.keys(this.geoObjectsByType());
 
-            // // Order the types by the order defined in their style config
-            // this.orderedTypes = types.sort((a, b) => {
-            //     return (this.resolvedStyles[a]?.order ?? 999) - (this.resolvedStyles[b]?.order ?? 999);
-            // });
+            // Order the types by the order defined in their style config
+            this.orderedTypes = types.sort((a, b) => {
+                return (this.resolvedStyles[a]?.order ?? 999) - (this.resolvedStyles[b]?.order ?? 999);
+            });
 
-            // this.calculateTypeLegend();
+            this.calculateTypeLegend();
 
-            // this.mapGeoObjects();
+            this.mapGeoObjects();
 
             // if (this.zoomMap) {
-            //     this.zoomToAll();
+            this.zoomToAll();
             // }
 
             // this.renderHighlights();
@@ -383,7 +387,7 @@ export class ExplorerComponent implements OnInit, OnDestroy, AfterViewInit {
     }
 
     calculateTypeLegend() {
-        var oldTypeLegend = JSON.parse(JSON.stringify(this.typeLegend));
+        let oldTypeLegend = JSON.parse(JSON.stringify(this.typeLegend));
         this.typeLegend = {};
 
         this.orderedTypes.forEach(type => {
@@ -423,15 +427,22 @@ export class ExplorerComponent implements OnInit, OnDestroy, AfterViewInit {
 
         this.map!.getStyle().layers.forEach(layer => {
             if (this.map!.getLayer(layer.id) && this.baseLayers[0].id !== layer.id) {
-                if (this.map!.getSource((layer as any).source)?.type !== "vector") {
+                const source = this.map!.getSource((layer as any).source);
+
+                if (source && source.id !== 'data' && source.type !== "vector") {
                     this.map!.removeLayer(layer.id);
                 }
             }
         });
 
-        Object.keys(this.map!.getStyle().sources).forEach(source => {
-            if (this.map!.getSource(source) && source !== 'mapbox' && this.map!.getSource(source)?.type !== "vector") {
-                this.map!.removeSource(source);
+        Object.keys(this.map!.getStyle().sources).forEach(sourceId => {
+            const source = this.map!.getSource(sourceId);
+
+            if (sourceId !== 'mapbox'
+                && sourceId !== 'data'
+                && source
+                && source.type !== "vector") {
+                this.map!.removeSource(sourceId);
             }
         });
     }
@@ -561,8 +572,6 @@ export class ExplorerComponent implements OnInit, OnDestroy, AfterViewInit {
 
     mapGeoObjects() {
         // setTimeout(() => {
-        // Find the index of the first symbol layer in the map style
-        const layers = this.map?.getStyle().layers;
 
         // The layers are organized by the type, so we have to group geoObjects by type and create a layer for each type
         let gosByType = this.geoObjectsByType();
@@ -613,7 +622,7 @@ export class ExplorerComponent implements OnInit, OnDestroy, AfterViewInit {
                     "text-anchor": "top",
                     "text-size": 12
                 }
-            }, "data-shape");
+            });
 
             // this.addHighlightLayers(type, geoObjects[0].geometry.type.toUpperCase());
             this.map?.addLayer(this.layerConfig(type, geoObjects[0].geometry.type.toUpperCase()), type + "-LABEL");
@@ -744,7 +753,7 @@ export class ExplorerComponent implements OnInit, OnDestroy, AfterViewInit {
         // const seen = new Set<string>();
         // return all.filter(obj => seen.has(obj.properties.uri) ? false : seen.add(obj.properties.uri));
 
-        return [];
+        return this.geoObjects;
     }
 
     geoObjectsByType(): { [key: string]: GeoObject[] } {
@@ -1018,6 +1027,8 @@ export class ExplorerComponent implements OnInit, OnDestroy, AfterViewInit {
                 },
                 // 'filter': ['==', '$type', 'Polygon']
             }, 'data-point');
+
+            console.log('Added data layers')
 
             this.initialized = true;
         });

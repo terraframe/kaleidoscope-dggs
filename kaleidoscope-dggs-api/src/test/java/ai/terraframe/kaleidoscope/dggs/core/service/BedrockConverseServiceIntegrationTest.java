@@ -1,5 +1,8 @@
 package ai.terraframe.kaleidoscope.dggs.core.service;
 
+import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 
@@ -14,6 +17,8 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 import ai.terraframe.kaleidoscope.dggs.core.config.TestConfiguration;
 import ai.terraframe.kaleidoscope.dggs.core.model.bedrock.BedrockResponse;
 import ai.terraframe.kaleidoscope.dggs.core.model.bedrock.ToolUseResponse;
+import ai.terraframe.kaleidoscope.dggs.core.model.dggs.Collection;
+import ai.terraframe.kaleidoscope.dggs.core.model.dggs.Extent;
 
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK, classes = TestConfiguration.class)
@@ -28,7 +33,9 @@ public class BedrockConverseServiceIntegrationTest
   {
     String inputText = "What is the elevation of Winnipeg?";
 
-    BedrockResponse message = this.service.getLocationFromText(inputText);
+    List<Collection> collections = Arrays.asList(new Collection("https://ogc-dggs-testing.fmecloud.com/api", "winnipeg-dem", "Test", "Elevation of winnipeg", 0.01D, new Extent(), new LinkedList<>()));
+
+    BedrockResponse message = this.service.getLocationFromText(collections, inputText);
 
     Assert.assertNotNull(message);
     Assert.assertEquals(BedrockResponse.Type.TOOL_USE, message.getType());

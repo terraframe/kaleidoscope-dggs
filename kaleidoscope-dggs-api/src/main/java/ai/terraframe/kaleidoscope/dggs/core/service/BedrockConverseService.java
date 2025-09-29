@@ -33,6 +33,7 @@ import ai.terraframe.kaleidoscope.dggs.core.config.AppProperties;
 import ai.terraframe.kaleidoscope.dggs.core.model.bedrock.BedrockResponse;
 import ai.terraframe.kaleidoscope.dggs.core.model.bedrock.FollowUpResponse;
 import ai.terraframe.kaleidoscope.dggs.core.model.bedrock.ToolUseResponse;
+import ai.terraframe.kaleidoscope.dggs.core.model.dggs.Collection;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.core.document.Document;
@@ -80,19 +81,27 @@ public class BedrockConverseService
         .build();
   }
 
-  public BedrockResponse getLocationFromText(String inputText)
+  public BedrockResponse getLocationFromText(List<Collection> collections, String inputText)
   {
     try (BedrockRuntimeAsyncClient client = getClient())
     {
-      String systemPrompt = """
+      StringBuilder systemPrompt = new StringBuilder("""
           You are a location analysis assistant that provides the location and subject cateogry base on a user question.
           The user is going to ask a question about a location.  Categorize the subject of the question as one of the
-          following options: precipitation, temperature, or elevation.  If you can determine the subject category and a
-          location name then use the 'Location_Bounds' tool otherwise ask follow-up questions to determine the subject 
-          category and location name.
-          """;
+          following options:\n\n""");
 
-      SystemContentBlock system = SystemContentBlock.fromText(systemPrompt);
+      collections.forEach(collection -> {
+        systemPrompt.append("'" + collection.getId() + "' - " + collection.getDescription() + "\n");
+      });
+
+      systemPrompt.append("""
+              
+          If you can determine the subject category and a location name then use the 'Location_Bounds' tool.
+          Otherwise ask follow-up questions to determine the subject category and location name. If the subject
+          is not one of the options then tell the user that you do not have any data for that subject.
+          """);
+
+      SystemContentBlock system = SystemContentBlock.fromText(systemPrompt.toString());
 
       Message message = Message.builder() //
           .content(ContentBlock.fromText(inputText)) //

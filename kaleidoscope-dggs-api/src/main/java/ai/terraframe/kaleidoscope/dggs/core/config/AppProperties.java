@@ -42,9 +42,9 @@ public class AppProperties
     return env.getProperty("jena.url");
   }
 
-  public String getDggsUrl()
+  public String[] getDggsUrls()
   {
-    return env.getProperty("dggs.url", "https://ogc-dggs-testing.fmecloud.com/api");
+    return env.getProperty("dggs.urls", "https://ogc-dggs-testing.fmecloud.com/api/dggs").split(",");
   }
-  
+
 }
