@@ -31,7 +31,7 @@ export class MessageService {
 
             this.store.dispatch(ChatActions.updateMessage({
                 ...system,
-                text: "See on map!",
+                text: "See the results on the map!",
                 loading: false,
                 data: message.collection
             }));
@@ -40,19 +40,21 @@ export class MessageService {
             this.store.dispatch(ExplorerActions.setPage({ page: message.page! }));
             this.store.dispatch(ExplorerActions.setWorkflowStep({
                 step: WorkflowStep.DisambiguateObject, data: {
-                    category: message.category
+                    category: message.category,
+                    datetime: message.datetime
                 }
             }));
             this.store.dispatch(ExplorerActions.selectGeoObject(null));
 
             this.store.dispatch(ChatActions.updateMessage({
                 ...system,
-                text: "There are multiple locations",
+                text: "There are multiple locations. Please select one.",
                 loading: false,
                 ambiguous: true,
                 data: {
                     page: message.page,
-                    category: message.category
+                    category: message.category,
+                    datetime: message.datetime
                 }
             }));
         }

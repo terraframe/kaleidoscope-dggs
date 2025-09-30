@@ -32,7 +32,7 @@ export class AichatComponent {
   public messageSenderIcon = faUpRightAndDownLeftFromCenter;
   private store = inject(Store);
 
-  message: string = 'What is the elevation of Winnipeg?';
+  message: string = 'What is the temperature of Winnipeg on 2020-01-17?';
 
   messages$: Observable<ChatMessage[]> = this.store.select(getMessages);
   sessionId$: Observable<string> = this.store.select(getSessionId);
@@ -191,7 +191,8 @@ export class AichatComponent {
 
     this.store.dispatch(ExplorerActions.setWorkflowStep({
       step: WorkflowStep.DisambiguateObject, data: {
-        category: message.data.category
+        category: message.data.category,
+        datetime: message.data.datetime
       }
     }));
 

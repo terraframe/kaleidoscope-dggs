@@ -34,6 +34,8 @@ import ai.terraframe.kaleidoscope.dggs.core.model.bedrock.BedrockResponse;
 import ai.terraframe.kaleidoscope.dggs.core.model.bedrock.InformationResponse;
 import ai.terraframe.kaleidoscope.dggs.core.model.bedrock.ToolUseResponse;
 import ai.terraframe.kaleidoscope.dggs.core.model.dggs.Collection;
+import ai.terraframe.kaleidoscope.dggs.core.model.dggs.Temporal;
+import ai.terraframe.kaleidoscope.dggs.core.serialization.IntervalDeserializer;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.core.document.Document;
@@ -69,6 +71,11 @@ public class BedrockConverseService
         .putString("type", "string") //
         .putString("description", "The subject category") //
         .build());
+    properties.put("date", Document.mapBuilder() //
+        .putString("type", "string") //
+        .putString("format", "date-time") //
+        .putString("description", "Optional date in ISO 8601 format (e.g., 2025-09-30T00:00:00Z)") //
+        .build());
 
     return ToolSpecification.builder() //
         .name("Location_Bounds") //
@@ -76,7 +83,7 @@ public class BedrockConverseService
         .inputSchema(schema -> schema.json(Document.mapBuilder() //
             .putString("type", "object") //
             .putMap("properties", properties) //
-            .putList("required", List.of(Document.fromString("locationName"))) //
+            .putList("required", List.of(Document.fromString("locationName"), Document.fromString("category"))) //
             .build()))
         .build();
   }
@@ -91,11 +98,22 @@ public class BedrockConverseService
           following options:\n\n""");
 
       collections.forEach(collection -> {
-        systemPrompt.append("'" + collection.getId() + "' - " + collection.getDescription() + "\n");
+
+        StringBuilder builder = new StringBuilder();
+        builder.append("'" + collection.getId() + "' - " + collection.getDescription());
+
+        Temporal temporal = collection.getExtent().getTemporal();
+
+        if (temporal != null && temporal.getInterval().size() > 0)
+        {
+          builder.append(". For the following time intervals: " + temporal.toDescription());
+        }
+
+        systemPrompt.append(builder + "\n");
       });
 
       systemPrompt.append("""
-              
+
           If you can determine the subject category and a location name then use the 'Location_Bounds' tool.
           Otherwise ask follow-up questions to determine the subject category and location name. If the subject
           is not one of the options then tell the user that you do not have any data for that subject.
@@ -140,7 +158,14 @@ public class BedrockConverseService
               String locationName = map.get("locationName").asString();
               String category = map.get("category").asString();
 
-              future.complete(new ToolUseResponse(locationName, category));
+              ToolUseResponse toolUse = new ToolUseResponse(locationName, category);
+
+              if (map.containsKey("date"))
+              {
+                toolUse.setDate(IntervalDeserializer.parse(map.get("date").asString()));
+              }
+
+              future.complete(toolUse);
             }
             else
             {

@@ -16,8 +16,10 @@
 package ai.terraframe.kaleidoscope.dggs.web.controller;
 
 import java.io.IOException;
+import java.util.Date;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -71,12 +73,13 @@ public class LocationController
       @RequestParam(defaultValue = "winnipeg-dem") String collectionId, //
       @RequestParam(defaultValue = "G0-51FC9-A") String zoneId, //
       @RequestParam(defaultValue = "ISEA3H") String dggrsId, //
-      @RequestParam(name = "zone-depth", defaultValue = "7") Integer zoneDepth) throws IOException, InterruptedException
+      @RequestParam(name = "zone-depth", defaultValue = "7") Integer zoneDepth, //
+      @RequestParam(name = "datetime" , required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Date datetime) throws IOException, InterruptedException
   {
     Collection collection = this.collectionService.getOrThrow(collectionId);
     Dggr dggr = this.dggrService.getOrThrow(collectionId);
 
-    JsonArray data = this.service.data(collection, dggr, zoneId, zoneDepth);
+    JsonArray data = this.service.data(collection, dggr, zoneId, zoneDepth, datetime);
 
     return ResponseEntity.ok(data.toString());
   }

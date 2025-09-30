@@ -15,7 +15,10 @@
  */
 package ai.terraframe.kaleidoscope.dggs.web.controller;
 
+import java.util.Date;
+
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -44,9 +47,12 @@ public class ChatController
 
   @GetMapping("/api/chat/zones")
   @ResponseBody
-  public ResponseEntity<Message> zones(@RequestParam(name = "uri") String uri, @RequestParam(name = "category") String category)
+  public ResponseEntity<Message> zones(
+      @RequestParam(name = "uri") String uri, //
+      @RequestParam(name = "category") String category, //
+      @RequestParam(name = "datetime", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Date datetime)
   {
-    Message message = this.service.zones(uri, category);
+    Message message = this.service.zones(uri, category, datetime);
 
     return ResponseEntity.ok(message);
   }

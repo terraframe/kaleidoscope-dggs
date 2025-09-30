@@ -40,6 +40,23 @@ public class BedrockConverseServiceIntegrationTest
     Assert.assertNotNull(message);
     Assert.assertEquals(BedrockResponse.Type.TOOL_USE, message.getType());
     Assert.assertEquals("Winnipeg", message.asType(ToolUseResponse.class).getLocationName());
-    Assert.assertEquals("elevation", message.asType(ToolUseResponse.class).getCategory());
+    Assert.assertEquals("winnipeg-dem", message.asType(ToolUseResponse.class).getCategory());
+    Assert.assertNull(message.asType(ToolUseResponse.class).getDate());
+  }
+
+  @Test
+  public void testGetNameWithTime() throws InterruptedException, ExecutionException, TimeoutException
+  {
+    String inputText = "What is the elevation of Winnipeg on 2020-01-17?";
+
+    List<Collection> collections = Arrays.asList(new Collection("https://ogc-dggs-testing.fmecloud.com/api", "winnipeg-dem", "Test", "Elevation of winnipeg", 0.01D, new Extent(), new LinkedList<>()));
+
+    BedrockResponse message = this.service.getLocationFromText(collections, inputText);
+
+    Assert.assertNotNull(message);
+    Assert.assertEquals(BedrockResponse.Type.TOOL_USE, message.getType());
+    Assert.assertEquals("Winnipeg", message.asType(ToolUseResponse.class).getLocationName());
+    Assert.assertEquals("winnipeg-dem", message.asType(ToolUseResponse.class).getCategory());
+    Assert.assertNotNull(message.asType(ToolUseResponse.class).getDate());
   }
 }

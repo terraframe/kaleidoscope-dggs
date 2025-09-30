@@ -1,6 +1,7 @@
 package ai.terraframe.kaleidoscope.dggs.core.service;
 
 import java.io.IOException;
+import java.util.Date;
 import java.util.Map;
 
 import org.locationtech.jts.geom.Envelope;
@@ -18,13 +19,13 @@ import ai.terraframe.kaleidoscope.dggs.core.model.dggs.Zones;
 @Component
 public interface RemoteDggsServiceIF
 {
-  JsonArray data(Collection collection, Dggr dggr, String zoneId, Integer zoneDepth) throws IOException, InterruptedException;
+  JsonArray data(Collection collection, Dggr dggr, String zoneId, Integer zoneDepth, Date datetime) throws IOException, InterruptedException;
 
   String html(Collection collection, Dggr dggr, String zoneId, Integer zoneDepth) throws IOException, InterruptedException;
 
-  Zones zones(Collection collection, Dggr dggr, Integer zoneLevel, Location location) throws IOException, InterruptedException;
+  Zones zones(Collection collection, Dggr dggr, Integer zoneLevel, Location location, Date datetime) throws IOException, InterruptedException;
 
-  Zones zones(Collection collection, Dggr dggr, Integer zoneLevel, Envelope envelope) throws IOException, InterruptedException;
+  Zones zones(Collection collection, Dggr dggr, Integer zoneLevel, Envelope envelope, Date datetime) throws IOException, InterruptedException;
 
   Map<String, CollectionsAndLinks> collections() throws IOException, InterruptedException;
 

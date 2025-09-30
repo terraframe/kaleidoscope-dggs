@@ -275,7 +275,7 @@ export class ExplorerComponent implements OnInit, OnDestroy, AfterViewInit {
         const message: ChatMessage = {
             id: uuidv4(),
             sender: 'user',
-            text: this.selectedObject!.properties.code,
+            text: this.selectedObject!.properties.label + " (" + this.selectedObject!.properties.code + ")",
             loading: false,
             purpose: 'standard'
         };
@@ -295,8 +295,9 @@ export class ExplorerComponent implements OnInit, OnDestroy, AfterViewInit {
         this.loading = true;
 
         this.workflowData$.pipe(take(1)).subscribe(data => {
+            this.store.dispatch(ExplorerActions.setWorkflowStep({ step: WorkflowStep.AiChatAndResults }));
 
-            this.chatService.zones(this.selectedObject!.properties.uri, data.category)
+            this.chatService.zones(this.selectedObject!.properties.uri, data.category, data.datetime)
                 .then((message) => this.messageService.process(system, message))
                 .catch((error: any) => {
                     this.errorService.handleError(error)

@@ -1,6 +1,7 @@
 package ai.terraframe.kaleidoscope.dggs.core.service;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.net.http.HttpClient;
@@ -125,16 +126,16 @@ public class RemoteDggsService implements RemoteDggsServiceIF
   }
 
   @Override
-  public Zones zones(Collection collection, Dggr dggr, Integer zoneLevel, Location location) throws IOException, InterruptedException
+  public Zones zones(Collection collection, Dggr dggr, Integer zoneLevel, Location location, Date datetime) throws IOException, InterruptedException
   {
     Geometry geometry = location.getGeometry();
     Envelope envelope = geometry.getEnvelopeInternal();
 
-    return zones(collection, dggr, zoneLevel, envelope);
+    return zones(collection, dggr, zoneLevel, envelope, datetime);
   }
 
   @Override
-  public Zones zones(Collection collection, Dggr dggr, Integer zoneLevel, Envelope envelope) throws IOException, InterruptedException
+  public Zones zones(Collection collection, Dggr dggr, Integer zoneLevel, Envelope envelope, Date datetime) throws IOException, InterruptedException
   {
     String url = collection.getUrl() + "/collections/" + collection.getId() + "/dggs/" + dggr.getId() + "/zones";
 
@@ -145,20 +146,7 @@ public class RemoteDggsService implements RemoteDggsServiceIF
     params += "&bbox=" + envelope.getMaxX();
     params += "&bbox=" + envelope.getMaxY();
     params += "&bbox-crs=" + URLEncoder.encode("https://www.opengis.net/def/crs/EPSG/0/4326", "UTF-8");
-
-    Temporal temporal = collection.getExtent().getTemporal();
-
-    if (temporal != null && temporal.getInterval().size() > 0)
-    {
-      Interval interval = temporal.getInterval().get(0);
-
-      List<Date> dates = interval.getDates();
-
-      if (dates.size() > 0)
-      {
-        params += "&dateTime=" + URLEncoder.encode(IntervalDeserializer.format(dates.get(0)), "UTF-8");
-      }
-    }
+    params = resolveDatetimeParameter(collection, datetime, params);
 
     HttpRequest request = HttpRequest.newBuilder() //
         .uri(URI.create(url + "?" + params)) //
@@ -166,6 +154,8 @@ public class RemoteDggsService implements RemoteDggsServiceIF
         .GET().build();
 
     HttpClient client = HttpClient.newHttpClient();
+
+    System.out.println("Remote request: [" + request.toString() + "]");
 
     HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
@@ -187,7 +177,7 @@ public class RemoteDggsService implements RemoteDggsServiceIF
   }
 
   @Override
-  public JsonArray data(Collection collection, Dggr dggrs, String zoneId, Integer zoneDepth) throws IOException, InterruptedException
+  public JsonArray data(Collection collection, Dggr dggrs, String zoneId, Integer zoneDepth, Date datetime) throws IOException, InterruptedException
   {
     // https://ogc-dggs-testing.fmecloud.com/api/collections/winnipeg-dem/dggs/ISEA3H/zones/G0-51FC9-A/data?f=html&zone-depth=7
 
@@ -196,21 +186,7 @@ public class RemoteDggsService implements RemoteDggsServiceIF
     String params = "f=geojson";
     params += "&zone-depth=" + zoneDepth;
     params += "&geometry=zone-region";
-
-    Temporal temporal = collection.getExtent().getTemporal();
-
-    // Do you need to include dateTime for temporal data
-    if (temporal != null && temporal.getInterval().size() > 0)
-    {
-      Interval interval = temporal.getInterval().get(0);
-
-      List<Date> dates = interval.getDates();
-
-      if (dates.size() > 0)
-      {
-        params += "&dateTime=" + URLEncoder.encode(IntervalDeserializer.format(dates.get(0)), "UTF-8");
-      }
-    }
+    params = resolveDatetimeParameter(collection, datetime, params);
 
     HttpRequest request = HttpRequest.newBuilder() //
         .uri(URI.create(url + "?" + params)) //
@@ -220,6 +196,8 @@ public class RemoteDggsService implements RemoteDggsServiceIF
     HttpClient client = HttpClient.newHttpClient();
 
     HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+    System.out.println("Remote request: [" + request.toString() + "]");
 
     if (response.statusCode() == 200)
     {
@@ -232,8 +210,6 @@ public class RemoteDggsService implements RemoteDggsServiceIF
     }
 
     String body = response.body();
-
-    System.out.println("Error for request[" + request.toString() + "]");
 
     // TODO: Handle error message
     throw new RuntimeException(body);
@@ -267,6 +243,40 @@ public class RemoteDggsService implements RemoteDggsServiceIF
 
     // TODO: Handle error message
     throw new RuntimeException(body);
+  }
+
+  private String resolveDatetimeParameter(Collection collection, Date datetime, String params) throws UnsupportedEncodingException
+  {
+    Temporal temporal = collection.getExtent().getTemporal();
+
+    if (temporal != null && temporal.getInterval().size() > 0)
+    {
+      if (datetime != null)
+      {
+        // Validate the date time is valid for the given collection
+        if (!temporal.getInterval().stream().anyMatch(i -> i.contains(datetime)))
+        {
+          throw new GenericRestException("Give date [" + IntervalDeserializer.format(datetime) + "] is outside of the date range of the collection");
+        }
+
+        return ( params += "&datetime=" + URLEncoder.encode(IntervalDeserializer.format(datetime), "UTF-8") );
+      }
+
+      // No date provided in the question, default to the start date of the
+      // first interval
+      Interval interval = temporal.getInterval().get(0);
+
+      List<Date> dates = interval.getDates();
+
+      if (dates.size() > 0)
+      {
+        return ( params += "&datetime=" + URLEncoder.encode(IntervalDeserializer.format(dates.get(0)), "UTF-8") );
+      }
+    }
+
+    // Collection does not contain temporal restrictions. Do no include the date
+    // parameter
+    return params;
   }
 
   public static JsonArray htmlToGeojson(String html)

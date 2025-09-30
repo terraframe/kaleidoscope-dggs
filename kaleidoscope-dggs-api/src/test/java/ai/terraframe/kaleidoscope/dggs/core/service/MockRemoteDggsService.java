@@ -6,6 +6,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
+import java.util.Date;
 
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
@@ -42,7 +43,7 @@ public class MockRemoteDggsService extends RemoteDggsService
   }
 
   @Override
-  public JsonArray data(Collection collection, Dggr dggr, String zoneId, Integer zoneDepth) throws IOException, InterruptedException
+  public JsonArray data(Collection collection, Dggr dggr, String zoneId, Integer zoneDepth, Date datetime) throws IOException, InterruptedException
   {
     try (InputStream istream = this.getClass().getResourceAsStream("/data.geojson"))
     {

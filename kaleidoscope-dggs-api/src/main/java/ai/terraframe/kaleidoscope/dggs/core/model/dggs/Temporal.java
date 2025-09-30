@@ -16,4 +16,12 @@ public class Temporal
 {
   @JsonDeserialize(contentUsing = IntervalDeserializer.class)
   private List<Interval> interval;
+
+  public String toDescription()
+  {
+    StringBuilder builder = new StringBuilder();
+    this.interval.stream().map(Interval::toDescription).forEach(builder::append);
+
+    return builder.toString();
+  }
 }

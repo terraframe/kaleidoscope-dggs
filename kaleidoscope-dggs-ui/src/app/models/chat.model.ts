@@ -43,5 +43,6 @@ export interface Message {
   page?: LocationPage;
   category?: string;
   content?: string;
+  datetime?: string;
 }
 

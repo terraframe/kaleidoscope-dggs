@@ -37,7 +37,7 @@ export class ChatService {
     return firstValueFrom(this.http.get<Message>(environment.apiUrl + 'api/chat/query', { params }));
   }
 
-  zones(uri: string, category: string): Promise<Message> {
+  zones(uri: string, category: string, datetime: string | null): Promise<Message> {
 
     // if (environment.mockRequests)
     // {
@@ -53,6 +53,10 @@ export class ChatService {
     let params = new HttpParams();
     params = params.append("uri", uri);
     params = params.append("category", category);
+
+    if (datetime != null) {
+      params = params.append("datetime", datetime);
+    }
 
     return firstValueFrom(this.http.get<Message>(environment.apiUrl + 'api/chat/zones', { params }));
   }

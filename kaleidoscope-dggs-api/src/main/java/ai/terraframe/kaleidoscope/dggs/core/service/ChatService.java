@@ -16,6 +16,7 @@
 package ai.terraframe.kaleidoscope.dggs.core.service;
 
 import java.io.IOException;
+import java.util.Date;
 import java.util.List;
 
 import org.slf4j.Logger;
@@ -73,6 +74,7 @@ public class ChatService
       {
         String locationName = message.asType(ToolUseResponse.class).getLocationName();
         String collectionId = message.asType(ToolUseResponse.class).getCategory();
+        Date datetime = message.asType(ToolUseResponse.class).getDate();
 
         LocationPage page = this.jena.fullTextLookup(locationName);
 
@@ -82,12 +84,12 @@ public class ChatService
         }
         else if (page.getCount() > 1)
         {
-          return new DisambiguateMessage(page, collectionId);
+          return new DisambiguateMessage(page, collectionId, datetime);
         }
 
         Location location = page.getLocations().get(0);
 
-        return zones(collectionId, location);
+        return zones(collectionId, location, datetime);
       }
       else if (message.getType().equals(BedrockResponse.Type.INFORMATION))
       {
@@ -110,14 +112,14 @@ public class ChatService
     }
   }
 
-  public Message zones(String uri, String collectionId)
+  public Message zones(String uri, String collectionId, Date datetime)
   {
 
     try
     {
       Location location = this.jena.getLocation(uri);
 
-      return zones(collectionId, location);
+      return zones(collectionId, location, datetime);
     }
     catch (GenericRestException e)
     {
@@ -131,19 +133,22 @@ public class ChatService
     }
   }
 
-  private Message zones(String collectionId, Location location) throws IOException, InterruptedException
+  private Message zones(String collectionId, Location location, Date datetime) throws IOException, InterruptedException
   {
     Collection collection = this.collectionService.getOrThrow(collectionId);
 
     Dggr dggr = this.dggrService.get(collectionId).orElseThrow(() -> new GenericRestException("Unabled to retrieve DGGR information for collection [" + collectionId + "]"));
 
-    Zones zones = this.dggs.zones(collection, dggr, 9, location);
+    Zones zones = this.dggs.zones(collection, dggr, 9, location, datetime);
 
     if (zones.getZones().size() > 0)
     {
-      String zoneId = zones.getZones().get(0);
+      JsonArray features = new JsonArray();
 
-      JsonArray features = this.dggs.data(collection, dggr, zoneId, 3);
+      for (String zoneId : zones.getZones())
+      {
+        features.addAll(this.dggs.data(collection, dggr, zoneId, 2, datetime));
+      }
 
       return new ZoneMessage(new ZoneCollection(location.getGeometry().getEnvelopeInternal(), features));
     }

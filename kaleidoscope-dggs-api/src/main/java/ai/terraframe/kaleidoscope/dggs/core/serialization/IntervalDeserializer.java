@@ -47,11 +47,16 @@ public class IntervalDeserializer extends StdDeserializer<Interval>
       {
         String text = node.asText();
 
-        interval.add(Date.from(Instant.parse(text)));
+        interval.add(parse(text));
       }
     }
 
     return interval;
+  }
+
+  public static Date parse(String text)
+  {
+    return Date.from(Instant.parse(text));
   }
 
   public static String format(Date date)
