@@ -6,9 +6,9 @@ export class MockUtil {
   public static message: ChatMessage =
     {
       id: '1',
-      sender: 'user',
+      role: 'USER',
       text: "",
-      purpose: 'standard'
+      messageType: 'BASIC'
     }
 
   public static messages: ChatMessage[] = [];

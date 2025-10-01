@@ -270,7 +270,7 @@ public class RemoteDggsService implements RemoteDggsServiceIF
 
       if (dates.size() > 0)
       {
-        return ( params += "&datetime=" + URLEncoder.encode(IntervalDeserializer.format(dates.get(0)), "UTF-8") );
+        return ( params += "&datetime=" + URLEncoder.encode(IntervalDeserializer.format(dates.get(dates.size() - 1)), "UTF-8") );
       }
     }
 

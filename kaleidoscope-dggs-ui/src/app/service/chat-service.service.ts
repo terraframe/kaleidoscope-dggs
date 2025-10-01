@@ -18,7 +18,7 @@ export class ChatService {
   }
 
 
-  query(inputText: string): Promise<Message> {
+  query(messages: ChatMessage[]): Promise<Message> {
 
     // if (environment.mockRequests)
     // {
@@ -31,35 +31,33 @@ export class ChatService {
     // else
     // {
     // Uncomment below to make a real HTTP request
-    let params = new HttpParams();
-    params = params.append("inputText", inputText);
 
-    return firstValueFrom(this.http.get<Message>(environment.apiUrl + 'api/chat/query', { params }));
+    return firstValueFrom(this.http.post<Message>(environment.apiUrl + 'api/chat/query', messages));
   }
 
-  zones(uri: string, category: string, datetime: string | null): Promise<Message> {
+  // zones(uri: string, category: string, datetime: string | null): Promise<Message> {
 
-    // if (environment.mockRequests)
-    // {
-    //   return new Promise<ChatMessage>((resolve) => {
-    //     setTimeout(() => {
-    //       resolve(MockUtil.message);
-    //     }, 500); // Simulating network delay 
-    //   });
-    // }
-    // else
-    // {
-    // Uncomment below to make a real HTTP request
-    let params = new HttpParams();
-    params = params.append("uri", uri);
-    params = params.append("category", category);
+  //   // if (environment.mockRequests)
+  //   // {
+  //   //   return new Promise<ChatMessage>((resolve) => {
+  //   //     setTimeout(() => {
+  //   //       resolve(MockUtil.message);
+  //   //     }, 500); // Simulating network delay 
+  //   //   });
+  //   // }
+  //   // else
+  //   // {
+  //   // Uncomment below to make a real HTTP request
+  //   let params = new HttpParams();
+  //   params = params.append("uri", uri);
+  //   params = params.append("category", category);
 
-    if (datetime != null) {
-      params = params.append("datetime", datetime);
-    }
+  //   if (datetime != null) {
+  //     params = params.append("datetime", datetime);
+  //   }
 
-    return firstValueFrom(this.http.get<Message>(environment.apiUrl + 'api/chat/zones', { params }));
-  }
+  //   return firstValueFrom(this.http.get<Message>(environment.apiUrl + 'api/chat/zones', { params }));
+  // }
   // }
 
 

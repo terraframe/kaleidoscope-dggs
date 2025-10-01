@@ -5,12 +5,12 @@
 
   <div *ngIf="!minimized" class="messages">
     <ng-container>
-      <div *ngFor="let msg of renderedMessages; let last = first" class="message" [class]="{'user' : msg.sender === 'user', 'system' : msg.sender === 'system'}">
-        <!-- <strong>{{ msg.sender }}:</strong> -->
+      <div *ngFor="let msg of renderedMessages; let last = first" class="message" [class]="{'user' : msg.role === 'USER', 'system' : msg.role === 'SYSTEM'}">
+        <!-- <strong>{{ msg.role }}:</strong> -->
          <div class="sender-icon">
-            <fa-icon *ngIf="msg.sender === 'user'" class="icon" [icon]="messageUserIcon"></fa-icon>
-          <!-- <fa-icon *ngIf="msg.sender === 'system'" [icon]="messageSystemIcon"></fa-icon> -->
-             <img *ngIf="msg.sender === 'system'" src="assets/system-logo.png">
+            <fa-icon *ngIf="msg.role === 'USER'" class="icon" [icon]="messageUserIcon"></fa-icon>
+          <!-- <fa-icon *ngIf="msg.role === 'SYSTEM'" [icon]="messageSystemIcon"></fa-icon> -->
+             <img *ngIf="msg.role === 'SYSTEM'" src="assets/system-logo.png">
          </div>
         <label [for]="msg.id" class="vertical-layout">
           <ng-container *ngIf="msg.loading"> <!-- *ngIf="msg.loading" -->

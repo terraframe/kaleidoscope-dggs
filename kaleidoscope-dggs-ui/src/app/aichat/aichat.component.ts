@@ -32,10 +32,9 @@ export class AichatComponent {
   public messageSenderIcon = faUpRightAndDownLeftFromCenter;
   private store = inject(Store);
 
-  message: string = 'What is the temperature of Winnipeg on 2020-01-17?';
+  message: string = '';
 
   messages$: Observable<ChatMessage[]> = this.store.select(getMessages);
-  sessionId$: Observable<string> = this.store.select(getSessionId);
 
   onMessagesChange: Subscription;
 
@@ -59,14 +58,28 @@ export class AichatComponent {
       this.renderedMessages = [...messages].reverse();
     });
 
+
     this.onWorkflowStepChange = combineLatest([
       this.workflowStep$,
       this.workflowData$
     ]).subscribe(([step, data]) => {
       if (step === WorkflowStep.AiChatAndResults && data != null) {
-        let go = (data as GeoObject);
-        this.message = go.properties.uri;
-        this.sendMessage();
+
+        if (data.action === 'NAME_RESOLUTION') {
+          const message: ChatMessage = {
+            id: uuidv4(),
+            role: 'USER',
+            messageType: 'LOCATION_RESOLVED',
+            text: data.label + '(' + data.code + ')',
+            loading: false,
+            data: {
+              toolUseId: data.toolUseId,
+              uri: data.uri
+            }
+          };
+
+          this.send(message);
+        }
       }
       this.minimized = step == WorkflowStep.MinimizeChat;
     });
@@ -77,52 +90,57 @@ export class AichatComponent {
     this.onWorkflowStepChange.unsubscribe();
   }
 
+  send(message: ChatMessage): void {
+
+    this.message = '';
+
+    this.store.dispatch(ChatActions.addMessage(message));
+
+    const system: ChatMessage = {
+      id: uuidv4(),
+      role: 'SYSTEM',
+      messageType: 'BASIC',
+      text: '',
+      loading: true
+    };
+
+    this.loading = true;
+
+    console.log(this.renderedMessages);
+
+    this.chatService.query([...this.renderedMessages].reverse())
+      .then((message) => this.messageService.process(system, message))
+      .catch(error => {
+        this.errorService.handleError(error)
+
+        this.store.dispatch(ChatActions.updateMessage({
+          ...system,
+          text: 'An error occurred',
+          loading: false,
+          messageType: 'ERROR',
+        }));
+
+      }).finally(() => {
+        this.loading = false;
+      });
+
+    this.store.dispatch(ChatActions.addMessage(system));
+  }
+
   sendMessage(): void {
     if (this.message.trim()) {
       if (this.minimized)
         this.minimizeChat();
 
-      this.sessionId$.pipe(take(1)).subscribe(sessionId => {
-        const message: ChatMessage = {
-          id: uuidv4(),
-          sender: 'user',
-          text: this.message,
-          loading: false,
-          purpose: 'standard'
-        };
+      const message: ChatMessage = {
+        id: uuidv4(),
+        role: 'USER',
+        messageType: 'BASIC',
+        text: this.message,
+        loading: false
+      };
 
-        this.message = '';
-
-        this.store.dispatch(ChatActions.addMessage(message));
-
-        const system: ChatMessage = {
-          id: uuidv4(),
-          sender: 'system',
-          text: '',
-          loading: true,
-          purpose: 'standard'
-        };
-
-        this.store.dispatch(ChatActions.addMessage(system));
-
-        this.loading = true;
-
-        this.chatService.query(message.text)
-          .then((message) => this.messageService.process(system, message))
-          .catch(error => {
-            this.errorService.handleError(error)
-
-            this.store.dispatch(ChatActions.updateMessage({
-              ...system,
-              text: 'An error occurred',
-              loading: false,
-              purpose: 'info'
-            }));
-
-          }).finally(() => {
-            this.loading = false;
-          })
-      });
+      this.send(message);
     }
   }
 

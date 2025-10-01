@@ -9,11 +9,11 @@ export interface MessageSection {
 
 export interface ChatMessage {
   id: string
-  sender: 'user' | 'system';
+  role: 'USER' | 'SYSTEM';
+  messageType: 'BASIC' | 'LOCATION_RESOLVED' | 'NAME_RESOLUTION' | 'ERROR';
   text: string;
   ambiguous?: boolean;
   loading?: boolean;
-  purpose: 'info' | 'standard'
   data?: any;
 }
 
@@ -41,8 +41,8 @@ export interface Message {
   type: string;
   collection?: ZoneCollection;
   page?: LocationPage;
-  category?: string;
   content?: string;
-  datetime?: string;
+  toolUseId?: string;
+  locationName?: string;
 }
 

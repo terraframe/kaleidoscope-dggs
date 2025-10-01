@@ -29,13 +29,18 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+
 import ai.terraframe.kaleidoscope.dggs.core.config.AppProperties;
 import ai.terraframe.kaleidoscope.dggs.core.model.bedrock.BedrockResponse;
 import ai.terraframe.kaleidoscope.dggs.core.model.bedrock.InformationResponse;
 import ai.terraframe.kaleidoscope.dggs.core.model.bedrock.ToolUseResponse;
 import ai.terraframe.kaleidoscope.dggs.core.model.dggs.Collection;
 import ai.terraframe.kaleidoscope.dggs.core.model.dggs.Temporal;
-import ai.terraframe.kaleidoscope.dggs.core.serialization.IntervalDeserializer;
+import ai.terraframe.kaleidoscope.dggs.core.model.message.ClientMessage;
+import ai.terraframe.kaleidoscope.dggs.core.model.message.ClientMessage.MessageType;
+import ai.terraframe.kaleidoscope.dggs.core.model.message.ClientMessage.SenderRole;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.core.document.Document;
@@ -49,10 +54,15 @@ import software.amazon.awssdk.services.bedrockruntime.model.StopReason;
 import software.amazon.awssdk.services.bedrockruntime.model.SystemContentBlock;
 import software.amazon.awssdk.services.bedrockruntime.model.Tool;
 import software.amazon.awssdk.services.bedrockruntime.model.ToolSpecification;
+import software.amazon.awssdk.services.bedrockruntime.model.ToolUseBlock;
 
 @Service
 public class BedrockConverseService
 {
+  public static final String  LOCATION_DATA       = "Location_Data";
+
+  public static final String  NAME_RESOLUTION     = "Name_Resolution";
+
   private static final int    MAX_TIMEOUT_MINUTES = 5;
 
   private static final Logger log                 = LoggerFactory.getLogger(BedrockConverseService.class);
@@ -60,12 +70,12 @@ public class BedrockConverseService
   @Autowired
   private AppProperties       properties;
 
-  public ToolSpecification getToolSpec()
+  public Tool getDataToolSpec()
   {
     HashMap<String, Document> properties = new HashMap<>();
-    properties.put("locationName", Document.mapBuilder() //
+    properties.put("uri", Document.mapBuilder() //
         .putString("type", "string") //
-        .putString("description", "The name of the location.") //
+        .putString("description", "The uri of the location") //
         .build());
     properties.put("category", Document.mapBuilder() //
         .putString("type", "string") //
@@ -77,23 +87,42 @@ public class BedrockConverseService
         .putString("description", "Optional date in ISO 8601 format (e.g., 2025-09-30T00:00:00Z)") //
         .build());
 
-    return ToolSpecification.builder() //
-        .name("Location_Bounds") //
-        .description("Get the bounding box from a location name.") //
+    return Tool.fromToolSpec(ToolSpecification.builder() //
+        .name(LOCATION_DATA) //
+        .description("Get the information for a location uri and category.") //
         .inputSchema(schema -> schema.json(Document.mapBuilder() //
             .putString("type", "object") //
             .putMap("properties", properties) //
-            .putList("required", List.of(Document.fromString("locationName"), Document.fromString("category"))) //
+            .putList("required", List.of(Document.fromString("uri"), Document.fromString("category"))) //
             .build()))
-        .build();
+        .build());
   }
 
-  public BedrockResponse getLocationFromText(List<Collection> collections, String inputText)
+  public Tool getLocationToolSpec()
+  {
+    HashMap<String, Document> properties = new HashMap<>();
+    properties.put("locationName", Document.mapBuilder() //
+        .putString("type", "string") //
+        .putString("description", "Name of the location") //
+        .build());
+
+    return Tool.fromToolSpec(ToolSpecification.builder() //
+        .name(NAME_RESOLUTION) //
+        .description("Resolves a location name to its uri.") //
+        .inputSchema(schema -> schema.json(Document.mapBuilder() //
+            .putString("type", "object") //
+            .putMap("properties", properties) //
+            .putList("required", List.of(Document.fromString("locationName"))) //
+            .build()))
+        .build());
+  }
+
+  public BedrockResponse execute(List<Collection> collections, List<ClientMessage> messages)
   {
     try (BedrockRuntimeAsyncClient client = getClient())
     {
       StringBuilder systemPrompt = new StringBuilder("""
-          You are a location analysis assistant that provides the location and subject cateogry base on a user question.
+          You are a location analysis assistant that provides the location information based on a user question.
           The user is going to ask a question about a location.  Categorize the subject of the question as one of the
           following options:\n\n""");
 
@@ -114,24 +143,27 @@ public class BedrockConverseService
 
       systemPrompt.append("""
 
-          If you can determine the subject category and a location name then use the 'Location_Bounds' tool.
-          Otherwise ask follow-up questions to determine the subject category and location name. If the subject
+          Use the 'Name_Resolution' to resolve a location name to its location uri. If you can determine
+          the subject category and a location uri then use the 'Location_Data' tool. Otherwise ask follow-up
+          questions to determine the subject category and location uir. If the subject
           is not one of the options then tell the user that you do not have any data for that subject.
           """);
 
       SystemContentBlock system = SystemContentBlock.fromText(systemPrompt.toString());
 
-      Message message = Message.builder() //
-          .content(ContentBlock.fromText(inputText)) //
-          .role(ConversationRole.USER).build();
+      List<Message> bedrockMessages = messages.stream().map(message -> {
+        return Message.builder() //
+            .content(ContentBlock.fromText(convertClientMessage(message))) //
+            .role(message.getRole().equals(SenderRole.USER) ? ConversationRole.USER : ConversationRole.ASSISTANT).build();
+      }).toList();
 
       String modelId = "us.anthropic.claude-3-7-sonnet-20250219-v1:0";
 
       CompletableFuture<ConverseResponse> request = client.converse(params -> params //
           .modelId(modelId) //
           .system(system) //
-          .toolConfig(config -> config.tools(Tool.fromToolSpec(getToolSpec()))) //
-          .messages(message) //
+          .toolConfig(config -> config.tools(getDataToolSpec(), getLocationToolSpec())) //
+          .messages(bedrockMessages) //
           .inferenceConfig(config -> config //
               .maxTokens(512) //
               .temperature(0.5F) //
@@ -150,22 +182,19 @@ public class BedrockConverseService
             // Extract the generated text from Bedrock's response object.
             if (StopReason.TOOL_USE.equals(response.stopReason()))
             {
-              ContentBlock toolResponse = response.output().message().content().stream() //
+              Message message = response.output().message();
+              List<ContentBlock> content = message.content();
+
+              ContentBlock toolResponse = content.stream() //
                   .filter(block -> block.type().equals(ContentBlock.Type.TOOL_USE)) //
                   .findFirst().orElseThrow();
 
-              Map<String, Document> map = toolResponse.toolUse().input().asMap();
-              String locationName = map.get("locationName").asString();
-              String category = map.get("category").asString();
+              ToolUseBlock toolUse = toolResponse.toolUse();
+              Map<String, Document> map = toolUse.input().asMap();
 
-              ToolUseResponse toolUse = new ToolUseResponse(locationName, category);
+              ToolUseResponse toolUseResponse = new ToolUseResponse(content.toString(), toolUse.name(), toolUse.toolUseId(), map);
 
-              if (map.containsKey("date"))
-              {
-                toolUse.setDate(IntervalDeserializer.parse(map.get("date").asString()));
-              }
-
-              future.complete(toolUse);
+              future.complete(toolUseResponse);
             }
             else
             {
@@ -216,6 +245,38 @@ public class BedrockConverseService
           cfg.apiCallTimeout(sdkTimeout);
           cfg.apiCallAttemptTimeout(sdkTimeout);
         }).build();
+  }
+
+  public String convertClientMessage(ClientMessage message)
+  {
+    if (message.getMessageType().equals(MessageType.NAME_RESOLUTION))
+    {
+      Map<String, Object> data = message.getData();
+
+      String toolUseId = (String) data.get("toolUseId");
+      String locationName = (String) data.get("locationName");
+
+      return "ToolUseBlock(ToolUseId=" + toolUseId + ", Name=Name_Resolution, Input={\"locationName\": \"" + locationName + "\"})";
+    }
+    else if (message.getMessageType().equals(MessageType.LOCATION_RESOLVED))
+    {
+      Map<String, Object> data = message.getData();
+
+      String toolUseId = (String) data.get("toolUseId");
+      String uri = (String) data.get("uri");
+
+      JsonArray toolResults = new JsonArray();
+
+      JsonObject toolResult = new JsonObject();
+      toolResult.addProperty("toolUseId", toolUseId);
+      toolResult.addProperty("content", "[{\"json\": {'uri': '" + uri + "'}}]");
+
+      toolResults.add(toolResult);
+
+      return toolResults.toString();
+    }
+
+    return message.getText();
   }
 
 }

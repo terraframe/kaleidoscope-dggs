@@ -1,11 +1,12 @@
 package ai.terraframe.kaleidoscope.dggs.core.model.bedrock;
 
-import java.util.Date;
+import java.util.Map;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import software.amazon.awssdk.core.document.Document;
 
 @Data
 @EqualsAndHashCode(callSuper = false)
@@ -13,17 +14,13 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class ToolUseResponse extends BedrockResponse
 {
-  private String locationName;
+  private String                content;
 
-  private String category;
+  private String                name;
 
-  private Date   date;
+  private String                toolUseId;
 
-  public ToolUseResponse(String locationName, String category)
-  {
-    this.locationName = locationName;
-    this.category = category;
-  }
+  private Map<String, Document> parameters;
 
   @Override
   public Type getType()

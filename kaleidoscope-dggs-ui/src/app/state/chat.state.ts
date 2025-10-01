@@ -5,8 +5,6 @@ import { MockUtil } from '../mock-util';
 
 /*
 */
-const initialMessage = ``;
-
 export const ChatActions = createActionGroup({
     source: 'chat',
     events: {
@@ -22,13 +20,12 @@ export interface ChatStateModel {
 }
 
 export const initialState: ChatStateModel = {
-    messages: [{ id: '1', sender: 'system', text: initialMessage, ambiguous: false, purpose: 'info' }],
+    messages: [],
     sessionId: uuidv4()
 }
 
 // if (environment.mockRequests)
 initialState.messages = MockUtil.messages.map(m => m);
-
 
 export const chatReducer = createReducer(
     initialState,

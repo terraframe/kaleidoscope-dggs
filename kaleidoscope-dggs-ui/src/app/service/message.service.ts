@@ -32,16 +32,16 @@ export class MessageService {
             this.store.dispatch(ChatActions.updateMessage({
                 ...system,
                 text: "See the results on the map!",
-                loading: false,
-                data: message.collection
+                loading: false
             }));
         }
         else if (message.type === 'DISAMBIGUATE') {
             this.store.dispatch(ExplorerActions.setPage({ page: message.page! }));
             this.store.dispatch(ExplorerActions.setWorkflowStep({
                 step: WorkflowStep.DisambiguateObject, data: {
-                    category: message.category,
-                    datetime: message.datetime
+                    page: message.page,
+                    toolUseId: message.toolUseId,
+                    locationName: message.locationName
                 }
             }));
             this.store.dispatch(ExplorerActions.selectGeoObject(null));
@@ -51,10 +51,10 @@ export class MessageService {
                 text: "There are multiple locations. Please select one.",
                 loading: false,
                 ambiguous: true,
+                messageType: 'NAME_RESOLUTION',
                 data: {
-                    page: message.page,
-                    category: message.category,
-                    datetime: message.datetime
+                    toolUseId: message.toolUseId,
+                    locationName: message.locationName
                 }
             }));
         }

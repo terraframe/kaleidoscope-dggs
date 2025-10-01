@@ -26,10 +26,6 @@ export class ExplorerService {
         });
     }
 
-    fullTextLookup(query: string): Promise<LocationPage> {
-        return firstValueFrom(this.http.post<LocationPage>(environment.apiUrl + 'api/full-text-lookup', { query: query }));
-    }
-
     getAttributes(uri: string, includeGeometry: boolean = false, hasPrefix: boolean = true): Promise<GeoObject> {
 
         let params = new HttpParams();
@@ -38,14 +34,6 @@ export class ExplorerService {
         params = params.append("hasPrefix", hasPrefix);
 
         return firstValueFrom(this.http.get<GeoObject>(environment.apiUrl + 'api/get-attributes', { params }));
-    }
-
-    data(zoneDepth: number): Promise<string> {
-
-        let params = new HttpParams();
-        params = params.append("zone-depth", zoneDepth);
-
-        return firstValueFrom(this.http.get<string>(environment.apiUrl + 'api/data', { params }));
     }
 
 }

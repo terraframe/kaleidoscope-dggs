@@ -24,7 +24,8 @@ export const ExplorerActions = createActionGroup({
         'Set Styles': props<{ styles: StyleConfig }>(),
         'Set Vector Layer': props<{ layer: VectorLayer }>(),
         'Set Configuration': props<Configuration>(),
-        'Set Workflow Step': props<{ step: WorkflowStep, data?: any }>()
+        'Set Workflow Step': props<{ step: WorkflowStep, data?: any }>(),
+        'Merge Workflow Step': props<{ step: WorkflowStep, data?: any }>()
     },
 });
 
@@ -214,6 +215,13 @@ export const explorerReducer = createReducer(
         workflowStep: step,
         workflowData: data
     })),
+
+    on(ExplorerActions.mergeWorkflowStep, (state, { step, data }) => ({
+        ...state,
+        workflowStep: step,
+        workflowData: { ...state.workflowData, ...data }
+    })),
+
 
 );
 

@@ -272,47 +272,14 @@ export class ExplorerComponent implements OnInit, OnDestroy, AfterViewInit {
             }
         }));
 
-        const message: ChatMessage = {
-            id: uuidv4(),
-            sender: 'user',
-            text: this.selectedObject!.properties.label + " (" + this.selectedObject!.properties.code + ")",
-            loading: false,
-            purpose: 'standard'
-        };
-
-        this.store.dispatch(ChatActions.addMessage(message));
-
-        const system: ChatMessage = {
-            id: uuidv4(),
-            sender: 'system',
-            text: '',
-            loading: true,
-            purpose: 'standard'
-        };
-
-        this.store.dispatch(ChatActions.addMessage(system));
-
-        this.loading = true;
-
-        this.workflowData$.pipe(take(1)).subscribe(data => {
-            this.store.dispatch(ExplorerActions.setWorkflowStep({ step: WorkflowStep.AiChatAndResults }));
-
-            this.chatService.zones(this.selectedObject!.properties.uri, data.category, data.datetime)
-                .then((message) => this.messageService.process(system, message))
-                .catch((error: any) => {
-                    this.errorService.handleError(error)
-
-                    this.store.dispatch(ChatActions.updateMessage({
-                        ...system,
-                        text: 'An error occurred',
-                        loading: false,
-                        purpose: 'info'
-                    }));
-
-                }).finally(() => {
-                    this.loading = false;
-                })
-        });
+        this.store.dispatch(ExplorerActions.mergeWorkflowStep({
+            step: WorkflowStep.AiChatAndResults, data: {
+                action: 'NAME_RESOLUTION',
+                uri: this.selectedObject!.properties.uri,
+                code: this.selectedObject!.properties.code,
+                label: this.selectedObject!.properties.label
+            }
+        }));
     }
 
     minimizeChat() {

@@ -17,7 +17,9 @@ package ai.terraframe.kaleidoscope.dggs.core.service;
 
 import java.io.IOException;
 import java.util.Date;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,9 +39,12 @@ import ai.terraframe.kaleidoscope.dggs.core.model.dggs.Collection;
 import ai.terraframe.kaleidoscope.dggs.core.model.dggs.Dggr;
 import ai.terraframe.kaleidoscope.dggs.core.model.dggs.Zones;
 import ai.terraframe.kaleidoscope.dggs.core.model.message.BasicMessage;
+import ai.terraframe.kaleidoscope.dggs.core.model.message.ClientMessage;
 import ai.terraframe.kaleidoscope.dggs.core.model.message.DisambiguateMessage;
 import ai.terraframe.kaleidoscope.dggs.core.model.message.Message;
 import ai.terraframe.kaleidoscope.dggs.core.model.message.ZoneMessage;
+import ai.terraframe.kaleidoscope.dggs.core.serialization.IntervalDeserializer;
+import software.amazon.awssdk.core.document.Document;
 
 @Service
 public class ChatService
@@ -61,44 +66,15 @@ public class ChatService
   @Autowired
   private DggrService            dggrService;
 
-  public Message query(String inputText)
+  public Message query(List<ClientMessage> messages)
   {
-
     try
     {
       List<Collection> collections = this.collectionService.getAll();
 
-      BedrockResponse message = this.bedrock.getLocationFromText(collections, inputText);
+      BedrockResponse message = this.bedrock.execute(collections, messages);
 
-      if (message.getType().equals(BedrockResponse.Type.TOOL_USE))
-      {
-        String locationName = message.asType(ToolUseResponse.class).getLocationName();
-        String collectionId = message.asType(ToolUseResponse.class).getCategory();
-        Date datetime = message.asType(ToolUseResponse.class).getDate();
-
-        LocationPage page = this.jena.fullTextLookup(locationName);
-
-        if (page.getCount() == 0)
-        {
-          throw new GenericRestException("Unable to find a location with the name [" + inputText + "]");
-        }
-        else if (page.getCount() > 1)
-        {
-          return new DisambiguateMessage(page, collectionId, datetime);
-        }
-
-        Location location = page.getLocations().get(0);
-
-        return zones(collectionId, location, datetime);
-      }
-      else if (message.getType().equals(BedrockResponse.Type.INFORMATION))
-      {
-        String content = message.asType(InformationResponse.class).getContent();
-
-        return new BasicMessage(content);
-      }
-
-      throw new UnsupportedOperationException();
+      return process(collections, messages, message);
     }
     catch (GenericRestException e)
     {
@@ -110,6 +86,61 @@ public class ChatService
 
       throw new GenericRestException("The chat agent was unable to generate a response. If your chat history is not relevant to the current request, you can try clearing your chat history and sending your message again.", e);
     }
+  }
+
+  private Message process(List<Collection> collections, List<ClientMessage> messages, BedrockResponse message) throws IOException, InterruptedException
+  {
+    if (message.getType().equals(BedrockResponse.Type.TOOL_USE))
+    {
+      ToolUseResponse toolUse = message.asType(ToolUseResponse.class);
+
+      if (toolUse.getName().equals(BedrockConverseService.LOCATION_DATA))
+      {
+        Map<String, Document> parameters = toolUse.getParameters();
+        String uri = parameters.get("uri").asString();
+        String category = parameters.get("category").asString();
+        Date datetime = parameters.containsKey("date") ? IntervalDeserializer.parse(parameters.get("date").asString()) : null;
+
+        Location location = this.jena.getLocation(uri);
+
+        return zones(category, location, datetime);
+      }
+      else if (toolUse.getName().equals(BedrockConverseService.NAME_RESOLUTION))
+      {
+        Map<String, Document> parameters = toolUse.getParameters();
+        String locationName = parameters.get("locationName").asString();
+
+        LocationPage page = this.jena.fullTextLookup(locationName);
+
+        if (page.getCount() == 0)
+        {
+          throw new GenericRestException("Unable to find a location with the name [" + locationName + "]");
+        }
+        else if (page.getCount() > 1)
+        {
+          return new DisambiguateMessage(toolUse.getToolUseId(), locationName, page);
+        }
+
+        // The location has been resolved to an uri
+        Location location = page.getLocations().get(0);
+        String uri = (String) location.getProperties().get("uri");
+
+        List<ClientMessage> clone = new LinkedList<>(messages);
+        clone.add(new ClientMessage("The location uri is: " + uri));
+
+        BedrockResponse toolResponse = this.bedrock.execute(collections, clone);
+
+        return process(collections, clone, toolResponse);
+      }
+    }
+    else if (message.getType().equals(BedrockResponse.Type.INFORMATION))
+    {
+      String content = message.asType(InformationResponse.class).getContent();
+
+      return new BasicMessage(content);
+    }
+
+    throw new UnsupportedOperationException();
   }
 
   public Message zones(String uri, String collectionId, Date datetime)
