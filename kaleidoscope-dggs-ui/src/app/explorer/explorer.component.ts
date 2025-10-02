@@ -259,7 +259,7 @@ export class ExplorerComponent implements OnInit, OnDestroy, AfterViewInit {
                 count: 0
             }
         }));
-        this.store.dispatch(ExplorerActions.setWorkflowStep({ step: WorkflowStep.AiChatAndResults }));
+        this.store.dispatch(ExplorerActions.mergeWorkflowStep({ step: WorkflowStep.AiChatAndResults }));
     }
 
     disambiguate() {

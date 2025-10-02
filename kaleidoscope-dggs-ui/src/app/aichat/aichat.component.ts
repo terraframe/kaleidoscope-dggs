@@ -70,7 +70,7 @@ export class AichatComponent {
             id: uuidv4(),
             role: 'USER',
             messageType: 'LOCATION_RESOLVED',
-            text: data.label + '(' + data.code + ')',
+            text: data.label + ' (' + data.code + ')',
             loading: false,
             data: {
               toolUseId: data.toolUseId,
@@ -201,18 +201,22 @@ export class AichatComponent {
   }
 
   setWorkflowStepDisambiguate(message: ChatMessage) {
-    this.store.dispatch(ExplorerActions.setPage({
-      page: message.data.page,
-    }));
 
-    this.store.dispatch(ExplorerActions.selectGeoObject(null));
+    this.workflowData$.pipe(take(1)).subscribe(data => {
 
-    this.store.dispatch(ExplorerActions.setWorkflowStep({
-      step: WorkflowStep.DisambiguateObject, data: {
-        category: message.data.category,
-        datetime: message.data.datetime
+      if (data.page != null) {
+        this.store.dispatch(ExplorerActions.setPage({
+          page: data.page,
+        }));
       }
-    }));
+
+      this.store.dispatch(ExplorerActions.selectGeoObject(null));
+
+      this.store.dispatch(ExplorerActions.mergeWorkflowStep({
+        step: WorkflowStep.DisambiguateObject
+      }));
+    });
+
 
 
     // this.mapLoading = true;

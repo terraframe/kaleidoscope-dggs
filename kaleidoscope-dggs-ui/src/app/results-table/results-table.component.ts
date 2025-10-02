@@ -34,14 +34,12 @@ export class ResultsTableComponent implements OnInit, OnDestroy {
     public highlightedObjectUri: string | null | undefined;
 
     workflowStep$: Observable<WorkflowStep> = this.store.select(getWorkflowStep);
-    
+
     onWorkflowStepChange: Subscription;
 
     public workflowStep: WorkflowStep = WorkflowStep.AiChatAndResults;
 
-    constructor(
-        private chatService: ChatService
-    ) {
+    constructor() {
         this.onHighlightedObjectChange = this.highlightedObject$.subscribe(object => {
             this.highlightObject(object == null ? undefined : object.properties.uri);
         });
