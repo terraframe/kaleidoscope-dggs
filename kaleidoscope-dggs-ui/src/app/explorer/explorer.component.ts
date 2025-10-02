@@ -64,12 +64,6 @@ export class ExplorerComponent implements OnInit, OnDestroy, AfterViewInit {
     public minimizeIcon = faDownLeftAndUpRightToCenter;
     public upsizeIcon = faUpRightAndDownLeftFromCenter;
 
-    public static GEO = "http://www.opengis.net/ont/geosparql#";
-
-    public static GEO_FEATURE = ExplorerComponent.GEO + "Feature";
-
-    public static GEO_WKT_LITERAL = ExplorerComponent.GEO + "wktLiteral";
-
     private store = inject(Store);
 
     zones$: Observable<Feature[]> = this.store.select(getZones);
@@ -129,11 +123,8 @@ export class ExplorerComponent implements OnInit, OnDestroy, AfterViewInit {
 
     baseLayers: any[] = [
         {
-            name: "Satellite",
-            label: "Satellite",
-            id: "satellite-v9",
-            sprite: "mapbox://sprites/mapbox/satellite-v9",
-            url: "mapbox://mapbox.satellite",
+            name: "streets-v12",
+            id: "streets-v12",
             selected: true
         }
     ];
@@ -900,7 +891,7 @@ export class ExplorerComponent implements OnInit, OnDestroy, AfterViewInit {
                     mapbox: {
                         'type': 'raster',
                         'tiles': [
-                            'https://api.mapbox.com/v4/mapbox.satellite/{z}/{x}/{y}@2x.jpg90?access_token=' + "pk.eyJ1IjoianVzdGlubGV3aXMiLCJhIjoiY2l0YnlpdWRkMDlkNjJ5bzZuMTR3MHZ3YyJ9.Ad0fQd8onRSYR9QZP6VyUw"
+                            'https://tile.openstreetmap.org/{z}/{x}/{y}.png'
                         ],
                         'tileSize': 512
                     }
