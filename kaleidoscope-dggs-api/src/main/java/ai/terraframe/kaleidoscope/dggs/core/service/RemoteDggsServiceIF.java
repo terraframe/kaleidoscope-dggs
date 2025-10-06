@@ -19,7 +19,7 @@ import ai.terraframe.kaleidoscope.dggs.core.model.dggs.Zones;
 @Component
 public interface RemoteDggsServiceIF
 {
-  JsonArray data(Collection collection, Dggr dggr, String zoneId, Integer zoneDepth, Date datetime) throws IOException, InterruptedException;
+  JsonArray data(Collection collection, Dggr dggr, String zoneId, Integer zoneDepth, Date datetime, String fiilter) throws IOException, InterruptedException;
 
   String html(Collection collection, Dggr dggr, String zoneId, Integer zoneDepth) throws IOException, InterruptedException;
 

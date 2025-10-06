@@ -24,6 +24,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,6 +34,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
 import ai.terraframe.kaleidoscope.dggs.core.config.AppProperties;
+import ai.terraframe.kaleidoscope.dggs.core.model.CollectionAttribute;
 import ai.terraframe.kaleidoscope.dggs.core.model.bedrock.BedrockResponse;
 import ai.terraframe.kaleidoscope.dggs.core.model.bedrock.InformationResponse;
 import ai.terraframe.kaleidoscope.dggs.core.model.bedrock.ToolUseResponse;
@@ -70,6 +72,9 @@ public class BedrockConverseService
   @Autowired
   private AppProperties       properties;
 
+  @Autowired
+  private MetadataService     service;
+
   public Tool getDataToolSpec()
   {
     HashMap<String, Document> properties = new HashMap<>();
@@ -85,6 +90,10 @@ public class BedrockConverseService
         .putString("type", "string") //
         .putString("format", "date-time") //
         .putString("description", "Optional date in ISO 8601 format (e.g., 2025-09-30T00:00:00Z)") //
+        .build());
+    properties.put("filter", Document.mapBuilder() //
+        .putString("type", "string") //
+        .putString("description", "Optional filter criteria. For example elevation > 2.3)") //
         .build());
 
     return Tool.fromToolSpec(ToolSpecification.builder() //
@@ -124,18 +133,24 @@ public class BedrockConverseService
       StringBuilder systemPrompt = new StringBuilder("""
           You are a location analysis assistant that provides the location information based on a user question.
           The user is going to ask a question about a location.  Categorize the subject of the question as one of the
-          following options:\n\n""");
+          following data collection options:\n\n""");
 
       collections.forEach(collection -> {
 
         StringBuilder builder = new StringBuilder();
-        builder.append("'" + collection.getId() + "' - " + collection.getDescription());
+        builder.append("'" + collection.getId() + "' - " + collection.getDescription() + "\n");
 
         Temporal temporal = collection.getExtent().getTemporal();
 
         if (temporal != null && temporal.getInterval().size() > 0)
         {
-          builder.append(". For the following time intervals: " + temporal.toDescription());
+          builder.append(" -- The collection has the following time intervals: " + temporal.toDescription() + "\n");
+        }
+
+        List<CollectionAttribute> attributes = this.service.getAttributes(collection);
+        
+        if(attributes.size() > 0) {
+          builder.append(" -- The collection supports the following attributes for filtering: \n" + StringUtils.join(attributes.stream().map(a -> a.getName() + " - " + a.getDescription()).toList(), ","));         
         }
 
         systemPrompt.append(builder + "\n");
@@ -145,8 +160,32 @@ public class BedrockConverseService
 
           Use the 'Name_Resolution' to resolve a location name to its location uri. If you can determine
           the subject category and a location uri then use the 'Location_Data' tool. Otherwise ask follow-up
-          questions to determine the subject category and location uir. If the subject
-          is not one of the options then tell the user that you do not have any data for that subject.
+          questions to determine the subject category and location uir. If the subject is not one of the
+          options then tell the user that you do not have any data for that subject. When using the 'Location_Data'
+          tool the user can additionally specify filter criteria using for the 'filter' attribute for the defined
+          attributes above.  The format of the filter criteria should be generated as CQL2 Text.  The following are
+          examples of CQL2 filters:
+
+          - Filter Features by Attribute
+          ```
+          population > 1000000
+          ```
+
+          - Combine Filters with Logical Operators
+          ```
+          population > 1000000 AND area < 500
+          ```
+
+          - Temporal Filter
+          ```
+          datetime BETWEEN 2023-01-01 AND 2023-12-31
+          ```
+
+          - String Matching
+          ```
+          name LIKE 'New%'
+          ```
+
           """);
 
       SystemContentBlock system = SystemContentBlock.fromText(systemPrompt.toString());

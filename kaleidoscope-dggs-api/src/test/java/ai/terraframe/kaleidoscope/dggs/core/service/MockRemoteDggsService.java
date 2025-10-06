@@ -43,7 +43,7 @@ public class MockRemoteDggsService extends RemoteDggsService
   }
 
   @Override
-  public JsonArray data(Collection collection, Dggr dggr, String zoneId, Integer zoneDepth, Date datetime) throws IOException, InterruptedException
+  public JsonArray data(Collection collection, Dggr dggr, String zoneId, Integer zoneDepth, Date datetime, String fiilter) throws IOException, InterruptedException
   {
     try (InputStream istream = this.getClass().getResourceAsStream("/data.geojson"))
     {

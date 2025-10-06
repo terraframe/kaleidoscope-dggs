@@ -177,7 +177,7 @@ public class RemoteDggsService implements RemoteDggsServiceIF
   }
 
   @Override
-  public JsonArray data(Collection collection, Dggr dggrs, String zoneId, Integer zoneDepth, Date datetime) throws IOException, InterruptedException
+  public JsonArray data(Collection collection, Dggr dggrs, String zoneId, Integer zoneDepth, Date datetime, String filter) throws IOException, InterruptedException
   {
     // https://ogc-dggs-testing.fmecloud.com/api/collections/winnipeg-dem/dggs/ISEA3H/zones/G0-51FC9-A/data?f=html&zone-depth=7
 
@@ -187,6 +187,12 @@ public class RemoteDggsService implements RemoteDggsServiceIF
     params += "&zone-depth=" + zoneDepth;
     params += "&geometry=zone-region";
     params = resolveDatetimeParameter(collection, datetime, params);
+
+    if (filter != null)
+    {
+      params += "&filter=" + URLEncoder.encode(filter, "UTF-8");
+      params += "&filter-lang=CQL2";
+    }
 
     HttpRequest request = HttpRequest.newBuilder() //
         .uri(URI.create(url + "?" + params)) //

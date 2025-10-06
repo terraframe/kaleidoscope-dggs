@@ -100,10 +100,11 @@ public class ChatService
         String uri = parameters.get("uri").asString();
         String category = parameters.get("category").asString();
         Date datetime = parameters.containsKey("date") ? IntervalDeserializer.parse(parameters.get("date").asString()) : null;
+        String filter = parameters.containsKey("filter") ? parameters.get("filter").asString() : null;
 
         Location location = this.jena.getLocation(uri);
 
-        return zones(category, location, datetime);
+        return data(category, location, datetime, filter);
       }
       else if (toolUse.getName().equals(BedrockConverseService.NAME_RESOLUTION))
       {
@@ -143,14 +144,14 @@ public class ChatService
     throw new UnsupportedOperationException();
   }
 
-  public Message zones(String uri, String collectionId, Date datetime)
+  public Message data(String uri, String collectionId, Date datetime, String filter)
   {
 
     try
     {
       Location location = this.jena.getLocation(uri);
 
-      return zones(collectionId, location, datetime);
+      return data(collectionId, location, datetime, filter);
     }
     catch (GenericRestException e)
     {
@@ -164,7 +165,7 @@ public class ChatService
     }
   }
 
-  private Message zones(String collectionId, Location location, Date datetime) throws IOException, InterruptedException
+  private Message data(String collectionId, Location location, Date datetime, String filter) throws IOException, InterruptedException
   {
     Collection collection = this.collectionService.getOrThrow(collectionId);
 
@@ -178,7 +179,7 @@ public class ChatService
 
       for (String zoneId : zones.getZones())
       {
-        features.addAll(this.dggs.data(collection, dggr, zoneId, 2, datetime));
+        features.addAll(this.dggs.data(collection, dggr, zoneId, 2, datetime, filter));
       }
 
       return new ZoneMessage(new ZoneCollection(location.getGeometry().getEnvelopeInternal(), features));

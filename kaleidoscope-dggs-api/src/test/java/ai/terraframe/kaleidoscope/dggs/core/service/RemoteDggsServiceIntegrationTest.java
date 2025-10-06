@@ -38,7 +38,7 @@ public class RemoteDggsServiceIntegrationTest
     Collection collection = mockCollection();
     Dggr dggr = mockDggr(collection);
 
-    JsonArray data = this.service.data(collection, dggr, "G0-51FC9-A", 3, null);
+    JsonArray data = this.service.data(collection, dggr, "G0-51FC9-A", 3, null, null);
 
     Assert.assertEquals(37, data.size());
 

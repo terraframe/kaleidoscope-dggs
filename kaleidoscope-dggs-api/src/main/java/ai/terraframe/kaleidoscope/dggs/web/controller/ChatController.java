@@ -44,9 +44,11 @@ public class ChatController
   @ResponseBody
   public ResponseEntity<Message> zones(@RequestParam(name = "uri") String uri, //
       @RequestParam(name = "category") String category, //
-      @RequestParam(name = "datetime", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Date datetime)
+      @RequestParam(name = "datetime", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Date datetime,
+      @RequestParam(name = "filter", required = false) String filter //
+      )
   {
-    Message message = this.service.zones(uri, category, datetime);
+    Message message = this.service.data(uri, category, datetime, filter);
 
     return ResponseEntity.ok(message);
   }
