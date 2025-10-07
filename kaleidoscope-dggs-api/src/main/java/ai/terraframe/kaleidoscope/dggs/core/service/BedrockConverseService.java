@@ -95,6 +95,10 @@ public class BedrockConverseService
         .putString("type", "string") //
         .putString("description", "Optional filter criteria. For example elevation > 2.3)") //
         .build());
+    properties.put("zone-depth", Document.mapBuilder() //
+        .putString("type", "integer") //
+        .putString("description", "Optional zone depth in which to get the data)") //
+        .build());
 
     return Tool.fromToolSpec(ToolSpecification.builder() //
         .name(LOCATION_DATA) //

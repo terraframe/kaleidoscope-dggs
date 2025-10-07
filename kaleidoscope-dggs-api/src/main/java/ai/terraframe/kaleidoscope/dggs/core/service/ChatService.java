@@ -101,10 +101,11 @@ public class ChatService
         String category = parameters.get("category").asString();
         Date datetime = parameters.containsKey("date") ? IntervalDeserializer.parse(parameters.get("date").asString()) : null;
         String filter = parameters.containsKey("filter") ? parameters.get("filter").asString() : null;
+        Integer zoneDepth = parameters.containsKey("zone-depth") ? Integer.parseInt(parameters.get("zone-depth").asString()) : Integer.valueOf(9);
 
         Location location = this.jena.getLocation(uri);
 
-        return data(category, location, datetime, filter);
+        return data(category, location, datetime, filter, zoneDepth);
       }
       else if (toolUse.getName().equals(BedrockConverseService.NAME_RESOLUTION))
       {
@@ -144,14 +145,14 @@ public class ChatService
     throw new UnsupportedOperationException();
   }
 
-  public Message data(String uri, String collectionId, Date datetime, String filter)
+  public Message data(String uri, String collectionId, Date datetime, String filter, Integer zoneDepth)
   {
 
     try
     {
       Location location = this.jena.getLocation(uri);
 
-      return data(collectionId, location, datetime, filter);
+      return data(collectionId, location, datetime, filter, zoneDepth);
     }
     catch (GenericRestException e)
     {
@@ -165,7 +166,7 @@ public class ChatService
     }
   }
 
-  private Message data(String collectionId, Location location, Date datetime, String filter) throws IOException, InterruptedException
+  private Message data(String collectionId, Location location, Date datetime, String filter, Integer zoneDepth) throws IOException, InterruptedException
   {
     Collection collection = this.collectionService.getOrThrow(collectionId);
 

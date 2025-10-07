@@ -127,4 +127,31 @@ public class BedrockConverseServiceIntegrationTest
     Assert.assertTrue(toolUse.getParameters().containsKey("filter"));
     Assert.assertEquals("elevation > 10.5", toolUse.getParameters().get("filter").asString());
   }
+  
+  @Test
+  public void testLocationInformationWithZoneDepth() throws InterruptedException, ExecutionException, TimeoutException
+  {
+    String uri = "terraframe.ai#Subdivision-44101234";
+    String toolUseId = "tooluse_vLS7L15WRsSbSK2Pd27KVg";
+    
+    List<ClientMessage> messages = Arrays.asList( //
+        new ClientMessage("Give me the elevation data of Winnipeg at a zone depth of 12"), //
+        new ClientMessage(SenderRole.SYSTEM, MessageType.NAME_RESOLUTION, "There are multiple locations").put("toolUseId", toolUseId).put("locationName", "Winnipeg"), //
+        new ClientMessage(SenderRole.USER, MessageType.LOCATION_RESOLVED, "44101234").put("toolUseId", toolUseId).put("uri", uri) //
+        );
+    
+    List<Collection> collections = Arrays.asList(new Collection("https://ogc-dggs-testing.fmecloud.com/api", "winnipeg-dem", "Test", "Elevation of winnipeg", 0.01D, new Extent(), new LinkedList<>()));
+    
+    BedrockResponse message = this.service.execute(collections, messages);
+    
+    Assert.assertNotNull(message);
+    Assert.assertEquals(BedrockResponse.Type.TOOL_USE, message.getType());
+    ToolUseResponse toolUse = message.asType(ToolUseResponse.class);
+    
+    Assert.assertEquals(BedrockConverseService.LOCATION_DATA, toolUse.getName());
+    Assert.assertEquals(uri, toolUse.getParameters().get("uri").asString());
+    Assert.assertEquals("winnipeg-dem", toolUse.getParameters().get("category").asString());
+    Assert.assertTrue(toolUse.getParameters().containsKey("zone-depth"));
+    Assert.assertEquals(12, toolUse.getParameters().get("zone-depth").asNumber().intValue());
+  }
 }
