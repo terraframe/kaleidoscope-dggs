@@ -101,7 +101,7 @@ public class ChatService
         String category = parameters.get("category").asString();
         Date datetime = parameters.containsKey("date") ? IntervalDeserializer.parse(parameters.get("date").asString()) : null;
         String filter = parameters.containsKey("filter") ? parameters.get("filter").asString() : null;
-        Integer zoneDepth = parameters.containsKey("zone-depth") ? Integer.parseInt(parameters.get("zone-depth").asString()) : Integer.valueOf(9);
+        Integer zoneDepth = parameters.containsKey("zone-depth") ? parameters.get("zone-depth").asNumber().intValue() : Integer.valueOf(9);
 
         Location location = this.jena.getLocation(uri);
 
@@ -172,7 +172,7 @@ public class ChatService
 
     Dggr dggr = this.dggrService.get(collectionId).orElseThrow(() -> new GenericRestException("Unabled to retrieve DGGR information for collection [" + collectionId + "]"));
 
-    Zones zones = this.dggs.zones(collection, dggr, 9, location, datetime);
+    Zones zones = this.dggs.zones(collection, dggr, zoneDepth, location, datetime);
 
     if (zones.getZones().size() > 0)
     {
@@ -180,7 +180,7 @@ public class ChatService
 
       for (String zoneId : zones.getZones())
       {
-        features.addAll(this.dggs.data(collection, dggr, zoneId, 2, datetime, filter));
+        features.addAll(this.dggs.geojson(collection, dggr, zoneId, null, datetime, filter));
       }
 
       return new ZoneMessage(new ZoneCollection(location.getGeometry().getEnvelopeInternal(), features));

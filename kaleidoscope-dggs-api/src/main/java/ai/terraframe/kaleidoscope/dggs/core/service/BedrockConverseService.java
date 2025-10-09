@@ -75,7 +75,7 @@ public class BedrockConverseService
   @Autowired
   private MetadataService     service;
 
-  public Tool getDataToolSpec()
+  public Tool getLocationDataToolSpec()
   {
     HashMap<String, Document> properties = new HashMap<>();
     properties.put("uri", Document.mapBuilder() //
@@ -111,7 +111,7 @@ public class BedrockConverseService
         .build());
   }
 
-  public Tool getLocationToolSpec()
+  public Tool getNameResolutionToolSpec()
   {
     HashMap<String, Document> properties = new HashMap<>();
     properties.put("locationName", Document.mapBuilder() //
@@ -205,7 +205,7 @@ public class BedrockConverseService
       CompletableFuture<ConverseResponse> request = client.converse(params -> params //
           .modelId(modelId) //
           .system(system) //
-          .toolConfig(config -> config.tools(getDataToolSpec(), getLocationToolSpec())) //
+          .toolConfig(config -> config.tools(getLocationDataToolSpec(), getNameResolutionToolSpec())) //
           .messages(bedrockMessages) //
           .inferenceConfig(config -> config //
               .maxTokens(512) //

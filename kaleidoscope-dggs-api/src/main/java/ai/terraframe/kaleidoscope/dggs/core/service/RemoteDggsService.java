@@ -140,13 +140,17 @@ public class RemoteDggsService implements RemoteDggsServiceIF
     String url = collection.getUrl() + "/collections/" + collection.getId() + "/dggs/" + dggr.getId() + "/zones";
 
     String params = "f=json";
-    params += "&zone-level=" + zoneLevel;
     params += "&bbox=" + envelope.getMinX();
     params += "&bbox=" + envelope.getMinY();
     params += "&bbox=" + envelope.getMaxX();
     params += "&bbox=" + envelope.getMaxY();
     params += "&bbox-crs=" + URLEncoder.encode("https://www.opengis.net/def/crs/EPSG/0/4326", "UTF-8");
     params = resolveDatetimeParameter(collection, datetime, params);
+
+    if (zoneLevel != null)
+    {
+      params += "&zone-level=" + zoneLevel;
+    }
 
     HttpRequest request = HttpRequest.newBuilder() //
         .uri(URI.create(url + "?" + params)) //
@@ -177,13 +181,62 @@ public class RemoteDggsService implements RemoteDggsServiceIF
   }
 
   @Override
-  public JsonArray data(Collection collection, Dggr dggrs, String zoneId, Integer zoneDepth, Date datetime, String filter) throws IOException, InterruptedException
+  public JsonArray geojson(Collection collection, Dggr dggrs, String zoneId, Integer zoneDepth, Date datetime, String filter) throws IOException, InterruptedException
   {
     // https://ogc-dggs-testing.fmecloud.com/api/collections/winnipeg-dem/dggs/ISEA3H/zones/G0-51FC9-A/data?f=html&zone-depth=7
 
     String url = collection.getUrl() + "/collections/" + collection.getId() + "/dggs/" + dggrs.getId() + "/zones/" + zoneId + "/data";
 
     String params = "f=geojson";
+    params += "&geometry=zone-region";
+    params = resolveDatetimeParameter(collection, datetime, params);
+
+    if (zoneDepth != null)
+    {
+      params += "&zone-depth=" + zoneDepth;
+    }
+
+    if (filter != null)
+    {
+      params += "&filter=" + URLEncoder.encode(filter, "UTF-8");
+      params += "&filter-lang=cql2-text";
+    }
+
+    HttpRequest request = HttpRequest.newBuilder() //
+        .uri(URI.create(url + "?" + params)) //
+        .header("Content-Type", "application/geo+json") //
+        .GET().build();
+
+    HttpClient client = HttpClient.newHttpClient();
+
+    HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+    System.out.println("Remote request: [" + request.toString() + "]");
+
+    if (response.statusCode() == 200)
+    {
+      JsonObject object = JsonParser.parseString(response.body()).getAsJsonObject();
+
+      // TODO : determine what property to use
+      String propertyName = object.keySet().stream().findFirst().orElseThrow(() -> new GenericRestException("Collection data does not contain any properties"));
+
+      return object.get(propertyName).getAsJsonObject().get("features").getAsJsonArray();
+    }
+
+    String body = response.body();
+
+    // TODO: Handle error message
+    throw new RuntimeException(body);
+  }
+
+  @Override
+  public JsonArray json(Collection collection, Dggr dggrs, String zoneId, Integer zoneDepth, Date datetime, String filter) throws IOException, InterruptedException
+  {
+    // https://ogc-dggs-testing.fmecloud.com/api/collections/winnipeg-dem/dggs/ISEA3H/zones/G0-51FC9-A/data?f=html&zone-depth=7
+
+    String url = collection.getUrl() + "/collections/" + collection.getId() + "/dggs/" + dggrs.getId() + "/zones/" + zoneId + "/data";
+
+    String params = "f=json";
     params += "&zone-depth=" + zoneDepth;
     params += "&geometry=zone-region";
     params = resolveDatetimeParameter(collection, datetime, params);
@@ -191,7 +244,7 @@ public class RemoteDggsService implements RemoteDggsServiceIF
     if (filter != null)
     {
       params += "&filter=" + URLEncoder.encode(filter, "UTF-8");
-      params += "&filter-lang=CQL2";
+      params += "&filter-lang=cql2-text";
     }
 
     HttpRequest request = HttpRequest.newBuilder() //

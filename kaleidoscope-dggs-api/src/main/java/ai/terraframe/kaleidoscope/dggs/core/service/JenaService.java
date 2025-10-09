@@ -21,7 +21,10 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.jena.datatypes.BaseDatatype;
+import org.apache.jena.geosparql.implementation.GeometryWrapper;
 import org.apache.jena.geosparql.implementation.parsers.wkt.WKTReader;
+import org.apache.jena.geosparql.implementation.parsers.wkt.WKTWriter;
 import org.apache.jena.query.ParameterizedSparqlString;
 import org.apache.jena.query.QueryExecution;
 import org.apache.jena.query.QuerySolution;
@@ -49,9 +52,9 @@ public class JenaService
   public static final String PREFIXES         = """
         PREFIX ai: <http://terraframe.ai#>
         PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-        PREFIX geo: <http://www.opengis.net/ont/geosparql#>
-        PREFIX spatialF: <http://jena.apache.org/function/spatial#>
         PREFIX text: <http://jena.apache.org/text#>
+        PREFIX geo: <http://www.opengis.net/ont/geosparql#>
+        PREFIX geof: <http://www.opengis.net/def/function/geosparql/>
 
       """;
 
@@ -87,6 +90,20 @@ public class JenaService
             LIMIT 1
       """;
 
+  public static String       WITHIN_BOX       = PREFIXES + """
+      SELECT ?uri ?code ?label ?wkt
+      FROM <http://terraframe.ai/g1>
+      WHERE {
+        ?geom geo:asWKT ?wkt .
+        ?uri geo:hasGeometry ?geom .
+        ?uri a ?type .
+        ?uri rdfs:label ?label .
+        ?uri ai:GeoObject-code ?code .        
+        FILTER (geof:sfContains(?envelope, ?wkt))
+      }
+      LIMIT 100
+            """;
+
   @Autowired
   private AppProperties      properties;
 
@@ -118,9 +135,6 @@ public class JenaService
     try (RDFConnection conn = builder.build())
     {
       LinkedList<Location> results = new LinkedList<>();
-
-      System.out.println("JenaService.query - EXECUTING QUERY");
-      System.out.println(sparql);
 
       conn.querySelect(sparql, (qs) -> {
         String uri = qs.getResource("uri").getURI();
@@ -244,8 +258,6 @@ public class JenaService
   {
     RDFConnectionRemoteBuilder builder = RDFConnectionRemote.create().destination(properties.getJenaUrl());
 
-    List<Location> results = new ArrayList<Location>();
-
     try (RDFConnection conn = builder.build())
     {
       // Use ParameterizedSparqlString to inject the URI safely
@@ -275,6 +287,46 @@ public class JenaService
     }
 
     throw new GenericRestException("Unable to find an object with the URI [" + uri + "]");
+  }
+
+  public List<Location> getWithinEnvelope(Geometry envelope, String type)
+  {
+    RDFConnectionRemoteBuilder builder = RDFConnectionRemote.create().destination(properties.getJenaUrl());
+
+    List<Location> results = new ArrayList<Location>();
+
+    WKTWriter.write(new GeometryWrapper(envelope, "http://www.opengis.net/ont/geosparql#wktLiteral"));
+
+    try (RDFConnection conn = builder.build())
+    {
+      // Use ParameterizedSparqlString to inject the URI safely
+      ParameterizedSparqlString pss = new ParameterizedSparqlString();
+      pss.setCommandText(WITHIN_BOX);
+      pss.setLiteral("envelope", envelope.toText(), new BaseDatatype("http://www.opengis.net/ont/geosparql#wktLiteral"));
+      pss.setIri("type", type);
+
+      try (QueryExecution qe = conn.query(pss.asQuery()))
+      {
+        ResultSet rs = qe.execSelect();
+
+        while (rs.hasNext())
+        {
+          QuerySolution qs = rs.next();
+
+          String uri = qs.getResource("uri").getURI();
+          String code = qs.getLiteral("code").getString();
+          String wkt = qs.getLiteral("wkt").getString();
+          String label = qs.getLiteral("label").getString();
+
+          WKTReader reader = WKTReader.extract(wkt);
+          Geometry geometry = reader.getGeometry();
+
+          results.add(new Location(uri, code, type, label, geometry));
+        }
+      }
+    }
+
+    return results;
   }
 
 }
