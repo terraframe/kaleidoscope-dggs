@@ -14,6 +14,7 @@ import ai.terraframe.kaleidoscope.dggs.core.model.dggs.Collection;
 import ai.terraframe.kaleidoscope.dggs.core.model.dggs.CollectionsAndLinks;
 import ai.terraframe.kaleidoscope.dggs.core.model.dggs.Dggr;
 import ai.terraframe.kaleidoscope.dggs.core.model.dggs.DggrsAndLinks;
+import ai.terraframe.kaleidoscope.dggs.core.model.dggs.DggsJsonData;
 import ai.terraframe.kaleidoscope.dggs.core.model.dggs.Zones;
 
 @Component
@@ -31,5 +32,5 @@ public interface RemoteDggsServiceIF
 
   String html(Collection collection, Dggr dggr, String zoneId, Integer zoneDepth) throws IOException, InterruptedException;
 
-  JsonArray json(Collection collection, Dggr dggrs, String zoneId, Integer zoneDepth, Date datetime, String filter) throws IOException, InterruptedException;
+  DggsJsonData json(Collection collection, Dggr dggrs, String zoneId, Integer zoneDepth, Date datetime, String filter) throws IOException, InterruptedException;
 }

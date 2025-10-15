@@ -26,6 +26,15 @@ export class MessageService {
                 data: message.collection
             }));
         }
+        else if (message.type === 'DGGS_JSON') {
+            this.store.dispatch(ExplorerActions.setDggsjson({ dggsjson: message.zones! }));
+
+            this.store.dispatch(ChatActions.updateMessage({
+                ...system,
+                text: "See the results on the map!",
+                loading: false
+            }));
+        }
         else if (message.type === 'ZONES') {
             this.store.dispatch(ExplorerActions.setZones({ collection: message.collection! }));
 

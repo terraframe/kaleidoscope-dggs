@@ -37,9 +37,11 @@ import ai.terraframe.kaleidoscope.dggs.core.model.bedrock.InformationResponse;
 import ai.terraframe.kaleidoscope.dggs.core.model.bedrock.ToolUseResponse;
 import ai.terraframe.kaleidoscope.dggs.core.model.dggs.Collection;
 import ai.terraframe.kaleidoscope.dggs.core.model.dggs.Dggr;
+import ai.terraframe.kaleidoscope.dggs.core.model.dggs.DggsJsonData;
 import ai.terraframe.kaleidoscope.dggs.core.model.dggs.Zones;
 import ai.terraframe.kaleidoscope.dggs.core.model.message.BasicMessage;
 import ai.terraframe.kaleidoscope.dggs.core.model.message.ClientMessage;
+import ai.terraframe.kaleidoscope.dggs.core.model.message.DggsJsonMessage;
 import ai.terraframe.kaleidoscope.dggs.core.model.message.DisambiguateMessage;
 import ai.terraframe.kaleidoscope.dggs.core.model.message.Message;
 import ai.terraframe.kaleidoscope.dggs.core.model.message.ZoneMessage;
@@ -64,7 +66,7 @@ public class ChatService
   private CollectionService      collectionService;
 
   @Autowired
-  private DggrService            dggrService;
+  private DggrsService           dggrService;
 
   public Message query(List<ClientMessage> messages)
   {
@@ -101,11 +103,14 @@ public class ChatService
         String category = parameters.get("category").asString();
         Date datetime = parameters.containsKey("date") ? IntervalDeserializer.parse(parameters.get("date").asString()) : null;
         String filter = parameters.containsKey("filter") ? parameters.get("filter").asString() : null;
+
+        // TODO: Determine default zone depth
         Integer zoneDepth = parameters.containsKey("zone-depth") ? parameters.get("zone-depth").asNumber().intValue() : Integer.valueOf(9);
 
         Location location = this.jena.getLocation(uri);
 
-        return data(category, location, datetime, filter, zoneDepth);
+        // return geojson(category, location, datetime, filter, zoneDepth);
+        return dggsjson(category, location, datetime, filter, zoneDepth);
       }
       else if (toolUse.getName().equals(BedrockConverseService.NAME_RESOLUTION))
       {
@@ -145,14 +150,13 @@ public class ChatService
     throw new UnsupportedOperationException();
   }
 
-  public Message data(String uri, String collectionId, Date datetime, String filter, Integer zoneDepth)
+  public Message geojson(String uri, String collectionId, Date datetime, String filter, Integer zoneDepth)
   {
-
     try
     {
       Location location = this.jena.getLocation(uri);
 
-      return data(collectionId, location, datetime, filter, zoneDepth);
+      return geojson(collectionId, location, datetime, filter, zoneDepth);
     }
     catch (GenericRestException e)
     {
@@ -166,7 +170,7 @@ public class ChatService
     }
   }
 
-  private Message data(String collectionId, Location location, Date datetime, String filter, Integer zoneDepth) throws IOException, InterruptedException
+  private Message geojson(String collectionId, Location location, Date datetime, String filter, Integer zoneDepth) throws IOException, InterruptedException
   {
     Collection collection = this.collectionService.getOrThrow(collectionId);
 
@@ -184,6 +188,53 @@ public class ChatService
       }
 
       return new ZoneMessage(new ZoneCollection(location.getGeometry().getEnvelopeInternal(), features));
+    }
+
+    throw new GenericRestException("Unable to get zone information for the collection [" + collectionId + "] and the bounds of [" + location.getProperties().get("label") + "]");
+  }
+
+  public Message dggsjson(String uri, String collectionId, Date datetime, String filter, Integer zoneDepth)
+  {
+    try
+    {
+      Location location = this.jena.getLocation(uri);
+
+      return dggsjson(collectionId, location, datetime, filter, zoneDepth);
+    }
+    catch (GenericRestException e)
+    {
+      throw e;
+    }
+    catch (Exception e)
+    {
+      log.error("Error invoking a remote service: ", e);
+
+      throw new GenericRestException("The chat agent was unable to generate a response. If your chat history is not relevant to the current request, you can try clearing your chat history and sending your message again.", e);
+    }
+  }
+
+  private Message dggsjson(final String collectionId, final Location location, final Date datetime, final String filter, final Integer zoneDepth) throws IOException, InterruptedException
+  {
+    Collection collection = this.collectionService.getOrThrow(collectionId);
+
+    Dggr dggr = this.dggrService.get(collectionId).orElseThrow(() -> new GenericRestException("Unabled to retrieve DGGR information for collection [" + collectionId + "]"));
+
+    Zones zones = this.dggs.zones(collection, dggr, zoneDepth, location, datetime);
+
+    if (zones.getZones().size() > 0)
+    {
+      List<DggsJsonData> data = zones.getZones().stream().map(zoneId -> {
+        try
+        {
+          return this.dggs.json(collection, dggr, zoneId, null, datetime, filter);
+        }
+        catch (IOException | InterruptedException e)
+        {
+          throw new GenericRestException("Unable to get zone information for the collection [" + collectionId + "] and the bounds of [" + location.getProperties().get("label") + "]");
+        }
+      }).toList();
+
+      return new DggsJsonMessage(data);
     }
 
     throw new GenericRestException("Unable to get zone information for the collection [" + collectionId + "] and the bounds of [" + location.getProperties().get("label") + "]");

@@ -22,16 +22,20 @@ export class ChatService {
 
     // if (environment.mockRequests)
     // {
-    //   return new Promise<ChatMessage>((resolve) => {
-    //     setTimeout(() => {
-    //       resolve(MockUtil.message);
-    //     }, 500); // Simulating network delay 
-    //   });
+    const text = messages[messages.length - 1].text
+
+    const message = (text === 't') ? MockUtil.tempature : (text === 'c') ? MockUtil.composite : MockUtil.dggsjson;
+
+    return new Promise<Message>((resolve) => {
+      setTimeout(() => {
+        resolve(message);
+      }, 500); // Simulating network delay 
+    });
     // }
     // else
     // {
     // Uncomment below to make a real HTTP request
-
+// 
     return firstValueFrom(this.http.post<Message>(environment.apiUrl + 'api/chat/query', messages));
   }
 

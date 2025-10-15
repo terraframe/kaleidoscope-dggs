@@ -49,7 +49,7 @@ public class ChatController
       @RequestParam(name = "zoneDepth", required = false) Integer zoneDepth //
       )
   {
-    Message message = this.service.data(uri, category, datetime, filter, zoneDepth);
+    Message message = this.service.geojson(uri, category, datetime, filter, zoneDepth);
 
     return ResponseEntity.ok(message);
   }

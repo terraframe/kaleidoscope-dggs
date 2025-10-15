@@ -14,9 +14,8 @@
 
   <description></description>
   <properties>
-    <maven.compiler.source>17</maven.compiler.source>
-    <maven.compiler.target>17</maven.compiler.target>
-    <java.version>17</java.version>
+    <maven.compiler.source>22</maven.compiler.source>
+    <maven.compiler.target>22</maven.compiler.target>
     <aws.version>2.29.6</aws.version>
     <spring.version>3.3.4</spring.version>
     <geotools.version>32.2</geotools.version>
@@ -96,6 +95,21 @@
       <version>1.18.36</version>
       <scope>provided</scope>
     </dependency>
+    <!-- DGGAL -->
+    <dependency>
+      <groupId>org.dggal</groupId>
+      <artifactId>dggal</artifactId>
+      <version>1.0.0</version>    
+    </dependency>    
+<!-- https://mvnrepository.com/artifact/org.wololo/jts2geojson -->
+<!--
+  
+<dependency>
+    <groupId>org.wololo</groupId>
+    <artifactId>jts2geojson</artifactId>
+    <version>0.18.1</version>
+</dependency>    
+-->
     <!-- Testing -->
     <dependency>
       <groupId>junit</groupId>

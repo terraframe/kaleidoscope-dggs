@@ -22,8 +22,6 @@
             "href": "/api/dggs/collections/winnipeg-dem"
         }
     ],
-    "zones": [
-        "E0-1058-D"
-    ],
+    "zones": [ "E0-1006-C", "E0-1006-D", "E0-1058-B" ],
     "returnedAreaMetersSquare": null
 }

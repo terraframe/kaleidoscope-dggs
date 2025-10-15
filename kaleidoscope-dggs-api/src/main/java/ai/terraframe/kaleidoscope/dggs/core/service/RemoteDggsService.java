@@ -31,6 +31,7 @@ import ai.terraframe.kaleidoscope.dggs.core.model.dggs.Collection;
 import ai.terraframe.kaleidoscope.dggs.core.model.dggs.CollectionsAndLinks;
 import ai.terraframe.kaleidoscope.dggs.core.model.dggs.Dggr;
 import ai.terraframe.kaleidoscope.dggs.core.model.dggs.DggrsAndLinks;
+import ai.terraframe.kaleidoscope.dggs.core.model.dggs.DggsJsonData;
 import ai.terraframe.kaleidoscope.dggs.core.model.dggs.Interval;
 import ai.terraframe.kaleidoscope.dggs.core.model.dggs.Temporal;
 import ai.terraframe.kaleidoscope.dggs.core.model.dggs.Zones;
@@ -230,16 +231,19 @@ public class RemoteDggsService implements RemoteDggsServiceIF
   }
 
   @Override
-  public JsonArray json(Collection collection, Dggr dggrs, String zoneId, Integer zoneDepth, Date datetime, String filter) throws IOException, InterruptedException
+  public DggsJsonData json(Collection collection, Dggr dggrs, String zoneId, Integer zoneDepth, Date datetime, String filter) throws IOException, InterruptedException
   {
     // https://ogc-dggs-testing.fmecloud.com/api/collections/winnipeg-dem/dggs/ISEA3H/zones/G0-51FC9-A/data?f=html&zone-depth=7
 
     String url = collection.getUrl() + "/collections/" + collection.getId() + "/dggs/" + dggrs.getId() + "/zones/" + zoneId + "/data";
 
     String params = "f=json";
-    params += "&zone-depth=" + zoneDepth;
-    params += "&geometry=zone-region";
     params = resolveDatetimeParameter(collection, datetime, params);
+
+    if (zoneDepth != null)
+    {
+      params += "&zone-depth=" + zoneDepth;
+    }
 
     if (filter != null)
     {
@@ -249,7 +253,7 @@ public class RemoteDggsService implements RemoteDggsServiceIF
 
     HttpRequest request = HttpRequest.newBuilder() //
         .uri(URI.create(url + "?" + params)) //
-        .header("Content-Type", "application/geo+json") //
+        .header("Content-Type", "application/json") //
         .GET().build();
 
     HttpClient client = HttpClient.newHttpClient();
@@ -260,12 +264,11 @@ public class RemoteDggsService implements RemoteDggsServiceIF
 
     if (response.statusCode() == 200)
     {
-      JsonObject object = JsonParser.parseString(response.body()).getAsJsonObject();
+      String body = response.body();
 
-      // TODO : determine what property to use
-      String propertyName = object.keySet().stream().findFirst().orElseThrow(() -> new GenericRestException("Collection data does not contain any properties"));
+      ObjectMapper mapper = new ObjectMapper();
 
-      return object.get(propertyName).getAsJsonObject().get("features").getAsJsonArray();
+      return mapper.readerFor(DggsJsonData.class).readValue(body);
     }
 
     String body = response.body();

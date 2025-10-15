@@ -12,9 +12,9 @@ import ai.terraframe.kaleidoscope.dggs.core.model.dggs.Collection;
 import ai.terraframe.kaleidoscope.dggs.core.model.dggs.Dggr;
 
 @Service
-public class DggrService
+public class DggrsService
 {
-  private static final String            DEFAULT_DGGR = "ISEA3H";
+  private static final String            DEFAULT_DGGRS = "ISEA3H";
 
   @Autowired
   private RemoteDggsServiceIF            service;
@@ -24,7 +24,7 @@ public class DggrService
 
   private SupplierLRUCache<String, Dggr> cache;
 
-  public DggrService()
+  public DggrsService()
   {
     this.cache = new SupplierLRUCache<String, Dggr>((v) -> {
       return new String[] { v.getId(), v.getCollectionId() };
@@ -41,7 +41,7 @@ public class DggrService
 
         List<Dggr> dggrs = this.service.dggs(collection.getUrl(), collectionId).getDggrs();
 
-        return dggrs.stream().filter(dggr -> dggr.getId().equals(DEFAULT_DGGR)) //
+        return dggrs.stream().filter(dggr -> dggr.getId().equals(DEFAULT_DGGRS)) //
             .findFirst() //
             .or(() -> dggrs.size() > 0 ? Optional.ofNullable(dggrs.get(0)) : Optional.empty());
       }

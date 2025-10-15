@@ -43,6 +43,10 @@ public class JenaServiceIntegrationTest
     Assert.assertEquals("http://terraframe.ai#Subdivision", location.getProperties().get("type"));
     Assert.assertEquals("4611040", location.getProperties().get("code"));
     Assert.assertEquals("Winnipeg", location.getProperties().get("label"));
+    
+    Geometry envelope = geometry.getEnvelope();
+    
+    System.out.println(envelope.toText());
 
     Envelope envelopeInternal = geometry.getEnvelopeInternal();
 

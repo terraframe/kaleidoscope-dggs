@@ -37,6 +37,32 @@ export interface ZoneCollection {
   features: Feature[];
 }
 
+export interface DggsJson {
+  dggrs: string
+  values: Value[]
+  depths: string[]
+  zoneId: string
+}
+
+export interface Value {
+  properties: Properties
+}
+
+export interface Properties {
+  [key: string]: PropertyData[]
+}
+
+export interface PropertyData {
+  depth: string
+  shape: Shape
+  data: string
+}
+
+export interface Shape {
+  subZones: number
+  count: number
+}
+
 export interface Message {
   type: string;
   collection?: ZoneCollection;
@@ -44,5 +70,6 @@ export interface Message {
   content?: string;
   toolUseId?: string;
   locationName?: string;
+  zones?: DggsJson[];
 }
 

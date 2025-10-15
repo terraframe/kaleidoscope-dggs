@@ -6,13 +6,15 @@ import { GeoObject } from '../models/geoobject.model';
 import { Style, StyleConfig } from '../models/style.model';
 import { VectorLayer } from "../models/vector-layer.model";
 import { Configuration } from "../models/configuration.model";
-import { LocationPage, ZoneCollection } from "../models/chat.model";
+import { DggsJson, LocationPage, ZoneCollection } from "../models/chat.model";
 import { defaultStyles } from "../explorer/defaultQueries";
 import { Feature, LngLatBoundsLike } from "maplibre-gl";
 
 export const ExplorerActions = createActionGroup({
     source: 'explorer',
     events: {
+        'Set Dggsjson': props<{ dggsjson: DggsJson[] }>(),
+
         'Set Zones': props<{ collection: ZoneCollection }>(),
         // 'Add GeoObject': props<{ object: GeoObject }>(),
         'Set Page': props<{ page: LocationPage }>(),
@@ -38,7 +40,8 @@ export enum WorkflowStep {
 }
 
 export interface ExplorerStateModel {
-    zones: Feature[];
+    dggsjson: DggsJson[] // Zones as dggs json data
+    zones: Feature[]; // Zones as geojson data
     bbox: LngLatBoundsLike | null;
     neighbors: GeoObject[];
     styles: StyleConfig;
@@ -52,7 +55,8 @@ export interface ExplorerStateModel {
 }
 
 export const initialState: ExplorerStateModel = {
-    zones: [],
+    dggsjson: [], // Zones as dggs json data
+    zones: [], 
     bbox: null,
     neighbors: [],
     styles: {},
@@ -112,6 +116,15 @@ export const explorerReducer = createReducer(
             bbox: collection.bbox
         };
     }),
+
+    // Set zones displayed on the map
+    on(ExplorerActions.setDggsjson, (state, { dggsjson }) => {
+
+        return {
+            ...state,
+            dggsjson: dggsjson,
+        };
+    }),    
 
     // // Set all neighbors
     // on(ExplorerActions.setNeighbors, (state, { objects, zoomMap }) => {
@@ -227,6 +240,11 @@ export const explorerReducer = createReducer(
 
 
 const selector = createFeatureSelector<ExplorerStateModel>('explorer');
+
+export const getDggsJson = createSelector(selector, (s) => {
+    return s.dggsjson;
+});
+
 
 export const getZones = createSelector(selector, (s) => {
     return s.zones;

@@ -65,6 +65,9 @@ PREFIX lpgvs: <https://dev-georegistry.geoprism.net/lpg/deliverable2024/0/rdfs#>
 PREFIX spatialF: <http://jena.apache.org/function/spatial#>
 `
 
+export const GREEN = "#228B22";
+export const RED = "#FF0000";
+
 export const SELECTED_COLOR = "#ffff00";
 export const HOVER_COLOR = "#ffff99";
 

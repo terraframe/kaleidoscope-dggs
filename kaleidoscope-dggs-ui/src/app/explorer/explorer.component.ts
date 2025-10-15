@@ -10,6 +10,7 @@ import { CheckboxModule } from 'primeng/checkbox';
 import { Observable, Subscription, take, withLatestFrom } from 'rxjs';
 import { Store } from '@ngrx/store';
 import { v4 as uuidv4 } from 'uuid';
+import * as turf from '@turf/turf';
 
 import { GeoObject } from '../models/geoobject.model';
 import { StyleConfig } from '../models/style.model';
@@ -18,21 +19,24 @@ import { AttributePanelComponent } from '../attribute-panel/attribute-panel.comp
 import { AichatComponent } from '../aichat/aichat.component';
 import { ResultsTableComponent } from '../results-table/results-table.component';
 import { ConfigurationService } from '../service/configuration-service.service';
-import { defaultQueries, SELECTED_COLOR, HOVER_COLOR } from './defaultQueries';
+import { defaultQueries, SELECTED_COLOR, HOVER_COLOR, GREEN, RED } from './defaultQueries';
 import { AllGeoJSON, bbox, bboxPolygon, center, union } from '@turf/turf';
 import { ErrorService } from '../service/error-service.service';
-import { ExplorerActions, getNeighbors, getObjects, getStyles, getVectorLayers, getZoomMap, highlightedObject, selectedObject, getWorkflowStep, WorkflowStep, getPage, getZones, getBbox, getWorkflowData } from '../state/explorer.state';
+import { ExplorerActions, getNeighbors, getObjects, getStyles, getVectorLayers, getZoomMap, highlightedObject, selectedObject, getWorkflowStep, WorkflowStep, getPage, getZones, getBbox, getWorkflowData, getDggsJson } from '../state/explorer.state';
 import { TabsModule } from 'primeng/tabs';
 import { VectorLayer } from '../models/vector-layer.model';
 import { environment } from '../../environments/environment';
 import { faArrowLeft, faArrowRight, faDownLeftAndUpRightToCenter, faUpRightAndDownLeftFromCenter } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
 import { ButtonModule } from 'primeng/button';
-import { ChatMessage, LocationPage } from '../models/chat.model';
+import { ChatMessage, DggsJson, LocationPage } from '../models/chat.model';
 import { TooltipModule } from 'primeng/tooltip';
 import { ChatActions } from '../state/chat.state';
 import { ChatService } from '../service/chat-service.service';
 import { MessageService } from '../service/message.service';
+
+import { DGGAL } from 'dggal';
+
 
 export interface TypeLegend { [key: string]: { label: string, color: string, visible: boolean, included: boolean } }
 
@@ -65,6 +69,8 @@ export class ExplorerComponent implements OnInit, OnDestroy, AfterViewInit {
     public upsizeIcon = faUpRightAndDownLeftFromCenter;
 
     private store = inject(Store);
+
+    dggsjson$: Observable<DggsJson[]> = this.store.select(getDggsJson);
 
     zones$: Observable<Feature[]> = this.store.select(getZones);
 
@@ -150,12 +156,22 @@ export class ExplorerComponent implements OnInit, OnDestroy, AfterViewInit {
         count: 0
     };
 
+    dggal: DGGAL | null = null;
+
     constructor(
         private configurationService: ConfigurationService,
         private chatService: ChatService,
         private messageService: MessageService,
         private errorService: ErrorService
     ) {
+
+        DGGAL.init({
+            locateFile: (filename: string) => {
+                return 'assets/wasm/libdggal_c_fn.js.0.0.wasm'
+            }
+        }).then((dggal: DGGAL) => {
+            this.dggal = dggal;
+        })
 
         // /*
         //  * The map should reload when the geo objects change, the styles change, or the neighbors change
@@ -213,13 +229,41 @@ export class ExplorerComponent implements OnInit, OnDestroy, AfterViewInit {
                     type: "FeatureCollection",
                     features: zones
                 }
+            }
+        })
+
+        this.dggsjson$.subscribe(dggsjsons => {
+
+            if (this.initialized) {
+                const features = dggsjsons.flatMap(dggsjson => this.dggsjsonToFeatures(dggsjson));
+
+                const geojson: any = {
+                    type: "FeatureCollection",
+                    features: features
+                }
+
+                const arr = features.map(feature => feature.properties.value);
+                let minVal = Math.min(...arr);
+                let maxVal = Math.max(...arr);
+
+                this.map!.setPaintProperty(
+                    'data-shape',
+                    'fill-color',
+                    [
+                        'interpolate',
+                        ['linear'],
+                        ['get', 'value'],
+                        minVal, GREEN,
+                        maxVal, RED
+                    ],
+                );
 
                 const source = this.map!.getSource('data') as GeoJSONSource;
                 source.setData(geojson);
-
-                console.log('Set data')
             }
         })
+
+
 
         this.bbox$.subscribe(bbox => {
             if (this.initialized && bbox != null) {
@@ -493,14 +537,14 @@ export class ExplorerComponent implements OnInit, OnDestroy, AfterViewInit {
                         "source-layer": layer.sourceLayer,
                         "type": "circle",
                         "paint": {
-                            "circle-radius": 10,
+                            "circle-radius": 20,
                             "circle-color": [
                                 "case",
                                 ["boolean", ["feature-state", "selected"], false],
                                 SELECTED_COLOR,
                                 layer.color
                             ],
-                            "circle-stroke-width": 2,
+                            "circle-stroke-width": 5,
                             "circle-stroke-color": "#FFFFFF"
                         }
                     }, layer.id + "-label");
@@ -957,7 +1001,7 @@ export class ExplorerComponent implements OnInit, OnDestroy, AfterViewInit {
                     'circle-radius': 7,
                     'circle-color': SELECTED_COLOR
                 },
-                // 'filter': ['==', '$type', 'Point']
+                'filter': ['==', '$type', 'Point']
             }, 'data-label');
 
             this.map!.addLayer({
@@ -965,11 +1009,17 @@ export class ExplorerComponent implements OnInit, OnDestroy, AfterViewInit {
                 'source': 'data',
                 'type': 'fill',
                 'paint': {
-                    'fill-color': SELECTED_COLOR,
+                    'fill-color': [
+                        'interpolate',
+                        ['linear'],
+                        ['get', 'value'],
+                        0, GREEN,
+                        10, RED
+                    ],
                     'fill-opacity': 0.8,
                     'fill-outline-color': 'black'
                 },
-                // 'filter': ['==', '$type', 'Polygon']
+                'filter': ['==', '$type', 'Polygon']
             }, 'data-point');
 
             console.log('Added data layers')
@@ -1125,5 +1175,106 @@ export class ExplorerComponent implements OnInit, OnDestroy, AfterViewInit {
         newLayer.enabled = !newLayer.enabled
 
         this.store.dispatch(ExplorerActions.setVectorLayer({ layer: newLayer }));
+    }
+
+    dggsjsonToFeatures(dggsjson: DggsJson): any {
+        const features = [];
+
+        const dggrs = this.dggal!.createDGGRS(dggsjson.dggrs);
+
+        try {
+            console.log('Processing zone response: ' + dggsjson.zoneId)
+            // const low = BigInt.asUintN(64, 12130488n);
+
+            // console.log("Max depth", dggrs.getMaxDepth());
+
+            const parent = dggrs.getZoneFromTextID(dggsjson.zoneId);
+
+            // console.log('Parent level', dggrs.getZoneLevel(parent));
+
+            // const first = dggrs.getFirstSubZone(parent, 5);
+
+            // console.log('First subzone', first);
+
+            // console.log('Index', dggrs.getSubZoneIndex(parent, first));
+            // console.log('At Index', dggrs.getSubZoneAtIndex(parent, 5, BigInt("0")));
+
+
+            if (dggsjson.values.length > 0 && dggsjson.depths.length > 0) {
+                const propertyMap = dggsjson.values[0].properties;
+                const keys = Object.keys(propertyMap);
+                const relativeDepth = parseInt(dggsjson.depths[0]);
+
+                if (keys.length > 0) {
+                    const propertyData = propertyMap[keys[0]];
+                    const data = propertyData[0].data.split(",").map(value => value === 'null' ? null : parseFloat(value));
+                    const zones = dggrs.getSubZones(parent, relativeDepth);
+
+                    // if (data.length !== zones.length) {
+                    //     console.log('Subzone count mismatch for zone [' + dggsjson.zoneId + ']: ' + data.length + ", " + zones.length)
+
+                    //     console.log('Data: ', data)
+                    //     console.log('Zones: ', zones)
+
+                    //     console.log('First subzone', dggrs.getFirstSubZone(parent, 5));
+                    //     console.log('At Index', dggrs.getSubZoneAtIndex(parent, 5, BigInt(0)));
+                    // }
+
+
+                    for (let i = 0; i < data.length; i++) {
+
+                        if (data[i] != null) {
+                            const zone = dggrs.getSubZoneAtIndex(parent, 5, BigInt(i));
+
+                            if (zone != null) {
+
+                                console.log('Creating geometry for zone: ' + dggrs.getZoneTextID(zone))
+
+                                // const vertices = dggrs.getZoneRefinedWGS84Vertices(zone, 0);
+                                const vertices = dggrs.getZoneWGS84Vertices(zone);
+
+
+                                const coordsDeg = (Array.isArray(vertices) ? vertices : []).map(v => [v.lon * 180 / Math.PI, v.lat * 180 / Math.PI]);
+
+                                if (coordsDeg.length > 0) {
+                                    const first = coordsDeg[0];
+                                    const last = coordsDeg[coordsDeg.length - 1];
+
+                                    if (first[0] !== last[0] || first[1] !== last[1]) {
+                                        coordsDeg.push([first[0], first[1]]);
+                                    }
+                                } else {
+                                    console.log('No vertices returned for zone');
+                                    return;
+                                }
+
+                                try {
+                                    const feature = turf.polygon([coordsDeg], { value: data[i] });
+
+                                    features.push(feature);
+                                }
+                                catch (e) {
+                                    console.log('Unable to create geometry from coordinates', coordsDeg)
+                                }
+
+                            }
+                        }
+                        else {
+                            console.log('Unable to find sub zone for index [" + +"]');
+                        }
+                    }
+                }
+            }
+
+            return features;
+        }
+        catch (e) {
+            console.log('Error creating geojson from dggsjosn response', e);
+        }
+        finally {
+            dggrs.delete();
+
+        }
+
     }
 }
