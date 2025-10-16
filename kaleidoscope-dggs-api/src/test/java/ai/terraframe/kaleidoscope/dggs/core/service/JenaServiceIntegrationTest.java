@@ -1,5 +1,6 @@
 package ai.terraframe.kaleidoscope.dggs.core.service;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
@@ -18,6 +19,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 import ai.terraframe.kaleidoscope.dggs.core.config.TestConfiguration;
 import ai.terraframe.kaleidoscope.dggs.core.model.Location;
 import ai.terraframe.kaleidoscope.dggs.core.model.LocationPage;
+import ai.terraframe.kaleidoscope.dggs.core.model.dggs.DggsJsonData;
 
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK, classes = TestConfiguration.class)
@@ -25,7 +27,13 @@ import ai.terraframe.kaleidoscope.dggs.core.model.LocationPage;
 public class JenaServiceIntegrationTest
 {
   @Autowired
-  private JenaService service;
+  private JenaService         service;
+
+  @Autowired
+  private RemoteDggsServiceIF dggsService;
+
+  @Autowired
+  private DggalService        dggalService;
 
   @Test
   public void testFullTextLookup() throws InterruptedException, ExecutionException, TimeoutException
@@ -43,9 +51,9 @@ public class JenaServiceIntegrationTest
     Assert.assertEquals("http://terraframe.ai#Subdivision", location.getProperties().get("type"));
     Assert.assertEquals("4611040", location.getProperties().get("code"));
     Assert.assertEquals("Winnipeg", location.getProperties().get("label"));
-    
+
     Geometry envelope = geometry.getEnvelope();
-    
+
     System.out.println(envelope.toText());
 
     Envelope envelopeInternal = geometry.getEnvelopeInternal();
@@ -63,16 +71,28 @@ public class JenaServiceIntegrationTest
   }
 
   @Test
-  public void testWithinBox() throws InterruptedException, ExecutionException, TimeoutException
+  public void testGetWithinGeometry() throws InterruptedException, ExecutionException, TimeoutException
   {
     // -97.34912125 : -96.95599652, 49.71363749 : 49.9938672
-    
+
     String wkt = "POLYGON((-97.449031 49.613756, -97.449031 50.093865, -96.855997 50.093865, -96.855997 49.613756, -97.449031 49.613756))";
-    
+
     WKTReader reader = WKTReader.extract(wkt);
     Geometry envelope = reader.getGeometry();
 
-    List<Location> locations = this.service.getWithinEnvelope(envelope, "http://terraframe.ai#Subdivision");
+    List<Location> locations = this.service.getWithinGeometry(envelope);
+
+    Assert.assertEquals(23, locations.size());
+  }
+
+  @Test
+  public void testDggalToJena() throws InterruptedException, ExecutionException, TimeoutException, IOException
+  {
+    // -97.34912125 : -96.95599652, 49.71363749 : 49.9938672
+    DggsJsonData dggsjson = this.dggsService.json(null, null, null, null, null, null);
+
+    List<Location> locations = this.dggalService.dggsjsonToFeatures(dggsjson).stream() //
+        .flatMap(feature -> this.service.getWithinGeometry((Geometry) feature.getDefaultGeometry()).stream()).toList();
 
     Assert.assertEquals(3, locations.size());
   }

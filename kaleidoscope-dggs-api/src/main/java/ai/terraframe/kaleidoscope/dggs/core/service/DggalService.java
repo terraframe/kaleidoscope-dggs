@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang3.stream.Streams;
+import org.apache.jena.geosparql.implementation.jts.CustomCoordinateSequence;
 import org.dggal.DGGAL;
 import org.dggal.DggalDggrs;
 import org.geotools.api.feature.simple.SimpleFeature;
@@ -17,6 +18,8 @@ import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Envelope;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.Polygon;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import ai.terraframe.kaleidoscope.dggs.core.model.GenericRestException;
@@ -26,7 +29,9 @@ import ai.terraframe.kaleidoscope.dggs.core.model.dggs.PropertyData;
 @Service
 public class DggalService
 {
-  private final DGGAL dggal;
+  private static final Logger log = LoggerFactory.getLogger(DggalService.class);
+
+  private final DGGAL         dggal;
 
   public DggalService()
   {
@@ -47,26 +52,25 @@ public class DggalService
     {
       MemorySegment module = dggal.init();
 
-      // todo a simple demo case
       final DggalDggrs dggrs = dggal.newDggrs(module, dggsjson.getDggrs());
 
       try
       {
-        System.out.println("Processing zone response: " + dggsjson.getZoneId());
+        log.trace("Processing zone response: " + dggsjson.getZoneId());
         // const low = BigInt.asUintN(64, 12130488n);
 
-        // System.out.println("Max depth", dggrs.getMaxDepth());
+        // log.trace("Max depth", dggrs.getMaxDepth());
 
         long parent = dggrs.getZoneFromTextID(dggsjson.getZoneId());
 
-        // System.out.println("Parent level", dggrs.getZoneLevel(parent));
+        // log.trace("Parent level", dggrs.getZoneLevel(parent));
 
         // const first = dggrs.getFirstSubZone(parent, 5);
 
-        // System.out.println("First subzone", first);
+        // log.trace("First subzone", first);
 
-        // System.out.println("Index", dggrs.getSubZoneIndex(parent, first));
-        // System.out.println("At Index", dggrs.getSubZoneAtIndex(parent, 5,
+        // log.trace("Index", dggrs.getSubZoneIndex(parent, first));
+        // log.trace("At Index", dggrs.getSubZoneAtIndex(parent, 5,
         // BigInt("0")));
 
         if (dggsjson.getValues().size() > 0 && dggsjson.getDepths().size() > 0)
@@ -84,13 +88,13 @@ public class DggalService
 
             if (data.size() != zones.length)
             {
-              System.out.println("Subzone count mismatch for zone [" + dggsjson.getZoneId() + "]: " + data.size() + ", " + zones.length);
+              log.trace("Subzone count mismatch for zone [" + dggsjson.getZoneId() + "]: " + data.size() + ", " + zones.length);
 
-              System.out.println("Data: " + data);
-              System.out.println("Zones: " + zones);
+              log.trace("Data: " + data);
+              log.trace("Zones: " + zones);
 
-              System.out.println("First subzone" + dggrs.getFirstSubZone(parent, 5));
-              System.out.println("At Index" + dggrs.getSubZoneAtIndex(parent, 5, 0));
+              log.trace("First subzone" + dggrs.getFirstSubZone(parent, 5));
+              log.trace("At Index" + dggrs.getSubZoneAtIndex(parent, 5, 0));
             }
 
             for (int i = 0; i < data.size(); i++)
@@ -100,7 +104,7 @@ public class DggalService
               {
                 long zone = dggrs.getSubZoneAtIndex(parent, 5, i);
 
-                System.out.println("Creating geometry for zone: " + dggrs.getZoneTextID(zone));
+                log.trace("Creating geometry for zone: " + dggrs.getZoneTextID(zone));
 
                 double[] vertices = dggrs.getZoneRefinedWGS84Vertices(zone, 0);
 
@@ -108,7 +112,7 @@ public class DggalService
 
                 for (int j = 0; j < vertices.length; j += 2)
                 {
-                  coordinates.add(new Coordinate(vertices[j] * 180 / Math.PI, vertices[j + 1] * 180 / Math.PI));
+                  coordinates.add(new Coordinate(vertices[j + 1] * 180 / Math.PI, vertices[j] * 180 / Math.PI));
                 }
 
                 if (coordinates.size() > 0)
@@ -123,15 +127,20 @@ public class DggalService
                 }
                 else
                 {
-                  System.out.println("No vertices returned for zone");
+                  log.trace("No vertices returned for zone");
                 }
 
+                // Must use the jena custom coordinate sequence because its WKT
+                // writer assumes that is the implementation of the coordinate
+                // sequence
+                CustomCoordinateSequence sequence = new CustomCoordinateSequence(coordinates.toArray(new Coordinate[coordinates.size()]));
+
                 GeometryFactory geometryFactory = new GeometryFactory();
-                Polygon polygon = geometryFactory.createPolygon(coordinates.toArray(new Coordinate[coordinates.size()]));
+                Polygon polygon = geometryFactory.createPolygon(sequence);
 
                 if (!polygon.isValid())
                 {
-                  System.out.println("Not valid");
+                  log.trace("Not valid");
                 }
 
                 SimpleFeatureBuilder featureBuilder = new SimpleFeatureBuilder(featureType);

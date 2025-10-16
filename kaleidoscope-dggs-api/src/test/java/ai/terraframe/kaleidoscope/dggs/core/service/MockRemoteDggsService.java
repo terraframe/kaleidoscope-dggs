@@ -16,7 +16,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonParser;
 
-import ai.terraframe.kaleidoscope.dggs.core.model.Location;
 import ai.terraframe.kaleidoscope.dggs.core.model.dggs.Collection;
 import ai.terraframe.kaleidoscope.dggs.core.model.dggs.Dggr;
 import ai.terraframe.kaleidoscope.dggs.core.model.dggs.DggsJsonData;
@@ -73,18 +72,18 @@ public class MockRemoteDggsService extends RemoteDggsService
     }
   }
 
-//  @Override
-//  public DggsJsonData json(Collection collection, Dggr dggrs, String zoneId, Integer zoneDepth, Date datetime, String filter) throws IOException, InterruptedException
-//  {
-//    try (InputStream istream = this.getClass().getResourceAsStream("/dggsjson.json"))
-//    {
-//      try (Reader reader = new BufferedReader(new InputStreamReader(istream, StandardCharsets.UTF_8)))
-//      {
-//        ObjectMapper mapper = new ObjectMapper();
-//
-//        return mapper.readerFor(DggsJsonData.class).readValue(reader);
-//      }
-//    }
-//
-//  }
+  @Override
+  public DggsJsonData json(Collection collection, Dggr dggrs, String zoneId, Integer zoneDepth, Date datetime, String filter) throws IOException, InterruptedException
+  {
+    try (InputStream istream = this.getClass().getResourceAsStream("/dggsjson.json"))
+    {
+      try (Reader reader = new BufferedReader(new InputStreamReader(istream, StandardCharsets.UTF_8)))
+      {
+        ObjectMapper mapper = new ObjectMapper();
+
+        return mapper.readerFor(DggsJsonData.class).readValue(reader);
+      }
+    }
+
+  }
 }

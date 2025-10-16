@@ -16,6 +16,7 @@
 package ai.terraframe.kaleidoscope.dggs.core.service;
 
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -61,13 +62,15 @@ import software.amazon.awssdk.services.bedrockruntime.model.ToolUseBlock;
 @Service
 public class BedrockConverseService
 {
-  public static final String  LOCATION_DATA       = "Location_Data";
+  public static final String  LOCATION_DATA        = "Location_Data";
 
-  public static final String  NAME_RESOLUTION     = "Name_Resolution";
+  public static final String  NAME_RESOLUTION      = "Name_Resolution";
 
-  private static final int    MAX_TIMEOUT_MINUTES = 5;
+  public static final String  POWER_INFRASTRUCTURE = "Power_Infrastructure";
 
-  private static final Logger log                 = LoggerFactory.getLogger(BedrockConverseService.class);
+  private static final int    MAX_TIMEOUT_MINUTES  = 5;
+
+  private static final Logger log                  = LoggerFactory.getLogger(BedrockConverseService.class);
 
   @Autowired
   private AppProperties       properties;
@@ -89,20 +92,26 @@ public class BedrockConverseService
     properties.put("date", Document.mapBuilder() //
         .putString("type", "string") //
         .putString("format", "date-time") //
-        .putString("description", "Optional date in ISO 8601 format (e.g., 2025-09-30T00:00:00Z)") //
+        .putString("description", "Optional date in ISO 8601 format (e.g., 2025-09-30T00:00:00Z") //
         .build());
     properties.put("filter", Document.mapBuilder() //
         .putString("type", "string") //
-        .putString("description", "Optional filter criteria. For example elevation > 2.3)") //
+        .putString("description", "Optional filter criteria. For example elevation > 2.3") //
         .build());
     properties.put("zone-depth", Document.mapBuilder() //
         .putString("type", "integer") //
-        .putString("description", "Optional zone depth in which to get the data)") //
+        .putString("description", "Optional zone depth in which to get the data") //
+        .build());
+    properties.put("format", Document.mapBuilder() //
+        .putString("type", "string") //
+        .putString("description", "Optional format in which to get the data") //
+        .putList("enum", Arrays.asList(Document.fromString("geojson"), Document.fromString("json"))) //
+        .putString("default", "json") //
         .build());
 
     return Tool.fromToolSpec(ToolSpecification.builder() //
         .name(LOCATION_DATA) //
-        .description("Get the information for a location uri and category.") //
+        .description("Get zone information for a location uri and category.") //
         .inputSchema(schema -> schema.json(Document.mapBuilder() //
             .putString("type", "object") //
             .putMap("properties", properties) //
@@ -130,6 +139,42 @@ public class BedrockConverseService
         .build());
   }
 
+  public Tool getPowerIntrastructureToolSpec()
+  {
+    HashMap<String, Document> properties = new HashMap<>();
+    properties.put("uri", Document.mapBuilder() //
+        .putString("type", "string") //
+        .putString("description", "The uri of the location") //
+        .build());
+    properties.put("category", Document.mapBuilder() //
+        .putString("type", "string") //
+        .putString("description", "The subject category") //
+        .build());
+    properties.put("date", Document.mapBuilder() //
+        .putString("type", "string") //
+        .putString("format", "date-time") //
+        .putString("description", "Optional date in ISO 8601 format (e.g., 2025-09-30T00:00:00Z)") //
+        .build());
+    properties.put("filter", Document.mapBuilder() //
+        .putString("type", "string") //
+        .putString("description", "Optional filter criteria. For example elevation > 2.3)") //
+        .build());
+    properties.put("zone-depth", Document.mapBuilder() //
+        .putString("type", "integer") //
+        .putString("description", "Optional zone depth in which to get the data)") //
+        .build());
+
+    return Tool.fromToolSpec(ToolSpecification.builder() //
+        .name(POWER_INFRASTRUCTURE) //
+        .description("Get power infrastructure features corresponding to a given data collection and location uri.") //
+        .inputSchema(schema -> schema.json(Document.mapBuilder() //
+            .putString("type", "object") //
+            .putMap("properties", properties) //
+            .putList("required", List.of(Document.fromString("uri"), Document.fromString("category"))) //
+            .build()))
+        .build());
+  }
+
   public BedrockResponse execute(List<Collection> collections, List<ClientMessage> messages)
   {
     try (BedrockRuntimeAsyncClient client = getClient())
@@ -152,9 +197,10 @@ public class BedrockConverseService
         }
 
         List<CollectionAttribute> attributes = this.service.getAttributes(collection);
-        
-        if(attributes.size() > 0) {
-          builder.append(" -- The collection supports the following attributes for filtering: \n" + StringUtils.join(attributes.stream().map(a -> a.getName() + " - " + a.getDescription()).toList(), ","));         
+
+        if (attributes.size() > 0)
+        {
+          builder.append(" -- The collection supports the following attributes for filtering: \n" + StringUtils.join(attributes.stream().map(a -> a.getName() + " - " + a.getDescription()).toList(), ","));
         }
 
         systemPrompt.append(builder + "\n");
@@ -163,7 +209,8 @@ public class BedrockConverseService
       systemPrompt.append("""
 
           Use the 'Name_Resolution' to resolve a location name to its location uri. If you can determine
-          the subject category and a location uri then use the 'Location_Data' tool. Otherwise ask follow-up
+          the subject category and a location uri then use the 'Location_Data' tool or if the question is
+          about power use the 'Power_Infrastructure' tool. Otherwise ask follow-up
           questions to determine the subject category and location uir. If the subject is not one of the
           options then tell the user that you do not have any data for that subject. When using the 'Location_Data'
           tool the user can additionally specify filter criteria using for the 'filter' attribute for the defined
@@ -205,7 +252,7 @@ public class BedrockConverseService
       CompletableFuture<ConverseResponse> request = client.converse(params -> params //
           .modelId(modelId) //
           .system(system) //
-          .toolConfig(config -> config.tools(getLocationDataToolSpec(), getNameResolutionToolSpec())) //
+          .toolConfig(config -> config.tools(getNameResolutionToolSpec(), getLocationDataToolSpec(), getPowerIntrastructureToolSpec())) //
           .messages(bedrockMessages) //
           .inferenceConfig(config -> config //
               .maxTokens(512) //

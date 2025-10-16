@@ -67,6 +67,16 @@ export class MessageService {
                 }
             }));
         }
+        else if (message.type === 'FEATURES') {
+            this.store.dispatch(ExplorerActions.setPage({ page: message.page! }));
+            this.store.dispatch(ExplorerActions.selectGeoObject(null));
+
+            this.store.dispatch(ChatActions.updateMessage({
+                ...system,
+                text: "See the results on the map!",
+                loading: false
+            }));
+        }
 
     }
 }

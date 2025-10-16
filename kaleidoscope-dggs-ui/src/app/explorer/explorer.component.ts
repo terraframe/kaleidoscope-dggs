@@ -229,6 +229,9 @@ export class ExplorerComponent implements OnInit, OnDestroy, AfterViewInit {
                     type: "FeatureCollection",
                     features: zones
                 }
+
+                const source = this.map!.getSource('data') as GeoJSONSource;
+                source.setData(geojson);
             }
         })
 
@@ -265,11 +268,11 @@ export class ExplorerComponent implements OnInit, OnDestroy, AfterViewInit {
 
 
 
-        this.bbox$.subscribe(bbox => {
-            if (this.initialized && bbox != null) {
-                this.map?.fitBounds(bbox, { padding: 50 });
-            }
-        });
+        // this.bbox$.subscribe(bbox => {
+        //     if (this.initialized && bbox != null) {
+        //         this.map?.fitBounds(bbox, { padding: 50 });
+        //     }
+        // });
     }
 
     ngOnInit(): void {
@@ -1022,8 +1025,6 @@ export class ExplorerComponent implements OnInit, OnDestroy, AfterViewInit {
                 'filter': ['==', '$type', 'Polygon']
             }, 'data-point');
 
-            console.log('Added data layers')
-
             this.initialized = true;
         });
 
@@ -1228,7 +1229,7 @@ export class ExplorerComponent implements OnInit, OnDestroy, AfterViewInit {
 
                             if (zone != null) {
 
-                                console.log('Creating geometry for zone: ' + dggrs.getZoneTextID(zone))
+                                // console.log('Creating geometry for zone: ' + dggrs.getZoneTextID(zone))
 
                                 // const vertices = dggrs.getZoneRefinedWGS84Vertices(zone, 0);
                                 const vertices = dggrs.getZoneWGS84Vertices(zone);
@@ -1258,9 +1259,6 @@ export class ExplorerComponent implements OnInit, OnDestroy, AfterViewInit {
                                 }
 
                             }
-                        }
-                        else {
-                            console.log('Unable to find sub zone for index [" + +"]');
                         }
                     }
                 }

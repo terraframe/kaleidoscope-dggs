@@ -90,20 +90,6 @@ public class JenaService
             LIMIT 1
       """;
 
-  public static String       WITHIN_BOX       = PREFIXES + """
-      SELECT ?uri ?code ?label ?wkt
-      FROM <http://terraframe.ai/g1>
-      WHERE {
-        ?geom geo:asWKT ?wkt .
-        ?uri geo:hasGeometry ?geom .
-        ?uri a ?type .
-        ?uri rdfs:label ?label .
-        ?uri ai:GeoObject-code ?code .        
-        FILTER (geof:sfContains(?envelope, ?wkt))
-      }
-      LIMIT 100
-            """;
-
   @Autowired
   private AppProperties      properties;
 
@@ -289,7 +275,7 @@ public class JenaService
     throw new GenericRestException("Unable to find an object with the URI [" + uri + "]");
   }
 
-  public List<Location> getWithinEnvelope(Geometry envelope, String type)
+  public List<Location> getWithinGeometry(Geometry envelope, String... types)
   {
     RDFConnectionRemoteBuilder builder = RDFConnectionRemote.create().destination(properties.getJenaUrl());
 
@@ -299,11 +285,29 @@ public class JenaService
 
     try (RDFConnection conn = builder.build())
     {
+      StringBuilder statement = new StringBuilder();
+      statement.append(PREFIXES + """
+          SELECT ?uri ?code ?label ?type ?wkt
+          FROM <http://terraframe.ai/g1>
+          WHERE {
+            ?geom geo:asWKT ?wkt .
+            ?uri geo:hasGeometry ?geom .
+            ?uri a ?type .
+            ?uri rdfs:label ?label .
+            ?uri ai:GeoObject-code ?code .
+            FILTER (geof:sfContains(?envelope, ?wkt))
+            FILTER (?type IN (?typeA, ?typeB, ?typeC ) )
+          }
+          LIMIT 100
+                """);
+
       // Use ParameterizedSparqlString to inject the URI safely
       ParameterizedSparqlString pss = new ParameterizedSparqlString();
-      pss.setCommandText(WITHIN_BOX);
+      pss.setCommandText(statement.toString());
       pss.setLiteral("envelope", envelope.toText(), new BaseDatatype("http://www.opengis.net/ont/geosparql#wktLiteral"));
-      pss.setIri("type", type);
+      pss.setIri("typeA", "http://terraframe.ai#PowerStation");
+      pss.setIri("typeB", "http://terraframe.ai#PowerSubstation");
+      pss.setIri("typeC", "http://terraframe.ai#PowerTransformer");
 
       try (QueryExecution qe = conn.query(pss.asQuery()))
       {
@@ -317,6 +321,7 @@ public class JenaService
           String code = qs.getLiteral("code").getString();
           String wkt = qs.getLiteral("wkt").getString();
           String label = qs.getLiteral("label").getString();
+          String type = readString(qs, "type");
 
           WKTReader reader = WKTReader.extract(wkt);
           Geometry geometry = reader.getGeometry();

@@ -142,4 +142,301 @@ export class MockUtil {
     "type": "DGGS_JSON"
   }
 
+
+  public static features: Message = {
+    "toolUseId": "tooluse__wZb-LkARH6B5Caf6gKOvQ",
+    "page": {
+      "locations": [
+        {
+          "properties": {
+            "code": "Transformer_19",
+            "label": "Transformer_19",
+            "type": "http://terraframe.ai#PowerTransformer",
+            "uri": "http://terraframe.ai#PowerTransformer-Transformer_19"
+          },
+          "type": "Feature",
+          "id": "http://terraframe.ai#PowerTransformer-Transformer_19",
+          "geometry": {
+            "coordinates": [
+              [
+                -96.947,
+                49.9094
+              ]
+            ],
+            "type": "MultiPoint"
+          }
+        },
+        {
+          "properties": {
+            "code": "Transformer_18",
+            "label": "Transformer_18",
+            "type": "http://terraframe.ai#PowerTransformer",
+            "uri": "http://terraframe.ai#PowerTransformer-Transformer_18"
+          },
+          "type": "Feature",
+          "id": "http://terraframe.ai#PowerTransformer-Transformer_18",
+          "geometry": {
+            "coordinates": [
+              [
+                -96.9466,
+                49.9095
+              ]
+            ],
+            "type": "MultiPoint"
+          }
+        },
+        {
+          "properties": {
+            "code": "Substation_1",
+            "label": "Substation_1",
+            "type": "http://terraframe.ai#PowerSubstation",
+            "uri": "http://terraframe.ai#PowerSubstation-Substation_1"
+          },
+          "type": "Feature",
+          "id": "http://terraframe.ai#PowerSubstation-Substation_1",
+          "geometry": {
+            "coordinates": [
+              [
+                -97.0136,
+                49.9278
+              ]
+            ],
+            "type": "MultiPoint"
+          }
+        },
+        {
+          "properties": {
+            "code": "Transformer_15",
+            "label": "Transformer_15",
+            "type": "http://terraframe.ai#PowerTransformer",
+            "uri": "http://terraframe.ai#PowerTransformer-Transformer_15"
+          },
+          "type": "Feature",
+          "id": "http://terraframe.ai#PowerTransformer-Transformer_15",
+          "geometry": {
+            "coordinates": [
+              [
+                -97.1644,
+                49.9781
+              ]
+            ],
+            "type": "MultiPoint"
+          }
+        },
+        {
+          "properties": {
+            "code": "Transformer_13",
+            "label": "Transformer_13",
+            "type": "http://terraframe.ai#PowerTransformer",
+            "uri": "http://terraframe.ai#PowerTransformer-Transformer_13"
+          },
+          "type": "Feature",
+          "id": "http://terraframe.ai#PowerTransformer-Transformer_13",
+          "geometry": {
+            "coordinates": [
+              [
+                -97.1658,
+                49.9781
+              ]
+            ],
+            "type": "MultiPoint"
+          }
+        },
+        {
+          "properties": {
+            "code": "Transformer_16",
+            "label": "Transformer_16",
+            "type": "http://terraframe.ai#PowerTransformer",
+            "uri": "http://terraframe.ai#PowerTransformer-Transformer_16"
+          },
+          "type": "Feature",
+          "id": "http://terraframe.ai#PowerTransformer-Transformer_16",
+          "geometry": {
+            "coordinates": [
+              [
+                -97.1653,
+                49.9781
+              ]
+            ],
+            "type": "MultiPoint"
+          }
+        },
+        {
+          "properties": {
+            "code": "Transformer_14",
+            "label": "Transformer_14",
+            "type": "http://terraframe.ai#PowerTransformer",
+            "uri": "http://terraframe.ai#PowerTransformer-Transformer_14"
+          },
+          "type": "Feature",
+          "id": "http://terraframe.ai#PowerTransformer-Transformer_14",
+          "geometry": {
+            "coordinates": [
+              [
+                -97.164,
+                49.9781
+              ]
+            ],
+            "type": "MultiPoint"
+          }
+        },
+        {
+          "properties": {
+            "code": "Substation_2",
+            "label": "Substation_2",
+            "type": "http://terraframe.ai#PowerSubstation",
+            "uri": "http://terraframe.ai#PowerSubstation-Substation_2"
+          },
+          "type": "Feature",
+          "id": "http://terraframe.ai#PowerSubstation-Substation_2",
+          "geometry": {
+            "coordinates": [
+              [
+                -97.0713,
+                49.8822
+              ]
+            ],
+            "type": "MultiPoint"
+          }
+        },
+        {
+          "properties": {
+            "code": "Transformer_3",
+            "label": "Transformer_3",
+            "type": "http://terraframe.ai#PowerTransformer",
+            "uri": "http://terraframe.ai#PowerTransformer-Transformer_3"
+          },
+          "type": "Feature",
+          "id": "http://terraframe.ai#PowerTransformer-Transformer_3",
+          "geometry": {
+            "coordinates": [
+              [
+                -97.0448,
+                49.8445
+              ]
+            ],
+            "type": "MultiPoint"
+          }
+        },
+        {
+          "properties": {
+            "code": "Transformer_1",
+            "label": "Transformer_1",
+            "type": "http://terraframe.ai#PowerTransformer",
+            "uri": "http://terraframe.ai#PowerTransformer-Transformer_1"
+          },
+          "type": "Feature",
+          "id": "http://terraframe.ai#PowerTransformer-Transformer_1",
+          "geometry": {
+            "coordinates": [
+              [
+                -97.0448,
+                49.844
+              ]
+            ],
+            "type": "MultiPoint"
+          }
+        },
+        {
+          "properties": {
+            "code": "Transformer_2",
+            "label": "Transformer_2",
+            "type": "http://terraframe.ai#PowerTransformer",
+            "uri": "http://terraframe.ai#PowerTransformer-Transformer_2"
+          },
+          "type": "Feature",
+          "id": "http://terraframe.ai#PowerTransformer-Transformer_2",
+          "geometry": {
+            "coordinates": [
+              [
+                -97.0448,
+                49.8443
+              ]
+            ],
+            "type": "MultiPoint"
+          }
+        },
+        {
+          "properties": {
+            "code": "Substation_4",
+            "label": "Substation_4",
+            "type": "http://terraframe.ai#PowerSubstation",
+            "uri": "http://terraframe.ai#PowerSubstation-Substation_4"
+          },
+          "type": "Feature",
+          "id": "http://terraframe.ai#PowerSubstation-Substation_4",
+          "geometry": {
+            "coordinates": [
+              [
+                -97.1157,
+                49.8319
+              ]
+            ],
+            "type": "MultiPoint"
+          }
+        },
+        {
+          "properties": {
+            "code": "Transformer_4",
+            "label": "Transformer_4",
+            "type": "http://terraframe.ai#PowerTransformer",
+            "uri": "http://terraframe.ai#PowerTransformer-Transformer_4"
+          },
+          "type": "Feature",
+          "id": "http://terraframe.ai#PowerTransformer-Transformer_4",
+          "geometry": {
+            "coordinates": [
+              [
+                -97.163,
+                49.8171
+              ]
+            ],
+            "type": "MultiPoint"
+          }
+        },
+        {
+          "properties": {
+            "code": "Transformer_5",
+            "label": "Transformer_5",
+            "type": "http://terraframe.ai#PowerTransformer",
+            "uri": "http://terraframe.ai#PowerTransformer-Transformer_5"
+          },
+          "type": "Feature",
+          "id": "http://terraframe.ai#PowerTransformer-Transformer_5",
+          "geometry": {
+            "coordinates": [
+              [
+                -97.1629,
+                49.8169
+              ]
+            ],
+            "type": "MultiPoint"
+          }
+        },
+        {
+          "properties": {
+            "code": "Substation_10",
+            "label": "Substation_10",
+            "type": "http://terraframe.ai#PowerSubstation",
+            "uri": "http://terraframe.ai#PowerSubstation-Substation_10"
+          },
+          "type": "Feature",
+          "id": "http://terraframe.ai#PowerSubstation-Substation_10",
+          "geometry": {
+            "coordinates": [
+              [
+                -97.0291,
+                49.7568
+              ]
+            ],
+            "type": "MultiPoint"
+          }
+        }
+      ],
+      "count": 15,
+      "offset": 0,
+      "limit": 15
+    },
+    "type": "FEATURES"
+  }
 }

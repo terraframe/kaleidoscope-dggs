@@ -1,10 +1,7 @@
 package ai.terraframe.kaleidoscope.dggs.core.service;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeoutException;
 
 import org.geotools.api.feature.simple.SimpleFeature;
 import org.junit.Assert;
@@ -17,9 +14,6 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import ai.terraframe.kaleidoscope.dggs.core.config.TestConfiguration;
 import ai.terraframe.kaleidoscope.dggs.core.model.dggs.DggsJsonData;
-import ai.terraframe.kaleidoscope.dggs.core.model.message.ClientMessage;
-import ai.terraframe.kaleidoscope.dggs.core.model.message.DisambiguateMessage;
-import ai.terraframe.kaleidoscope.dggs.core.model.message.Message;
 
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK, classes = TestConfiguration.class)
