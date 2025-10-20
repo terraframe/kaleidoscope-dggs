@@ -12,14 +12,9 @@ public class AppProperties
   @Autowired
   private Environment env;
 
-  public String getChatAgentId()
+  public String getModel()
   {
-    return env.getProperty("bedrock.chat.agent.id");
-  }
-
-  public String getChatAgentAliasId()
-  {
-    return env.getProperty("bedrock.chat.agent.alias.id");
+    return env.getProperty("bedrock.model", "us.anthropic.claude-3-7-sonnet-20250219-v1:0");
   }
 
   public Region getRegion()
@@ -46,5 +41,4 @@ public class AppProperties
   {
     return env.getProperty("dggs.urls", "https://ogc-dggs-testing.fmecloud.com/api/dggs").split(",");
   }
-
 }

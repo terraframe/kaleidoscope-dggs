@@ -68,14 +68,27 @@ export class MessageService {
             }));
         }
         else if (message.type === 'FEATURES') {
-            this.store.dispatch(ExplorerActions.setPage({ page: message.page! }));
+            this.store.dispatch(ExplorerActions.setPage({ page: message.page!, hasPopulation: (message.population != null) }));
             this.store.dispatch(ExplorerActions.selectGeoObject(null));
 
-            this.store.dispatch(ChatActions.updateMessage({
-                ...system,
-                text: "See the results on the map!",
-                loading: false
-            }));
+            if (message.zones != null) {
+                this.store.dispatch(ExplorerActions.setDggsjson({ dggsjson: message.zones! }));
+            }
+
+            if (message.population != null) {
+                this.store.dispatch(ChatActions.updateMessage({
+                    ...system,
+                    text: "The total population impacted is " + message.population.toLocaleString('en-US'),
+                    loading: false
+                }));
+            }
+            else {
+                this.store.dispatch(ChatActions.updateMessage({
+                    ...system,
+                    text: "See the results on the map!",
+                    loading: false
+                }));
+            }
         }
 
     }

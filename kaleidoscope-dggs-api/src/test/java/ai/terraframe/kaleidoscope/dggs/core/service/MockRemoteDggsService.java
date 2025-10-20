@@ -7,6 +7,7 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
+import java.util.Map;
 
 import org.locationtech.jts.geom.Envelope;
 import org.springframework.context.annotation.Primary;
@@ -17,6 +18,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonParser;
 
 import ai.terraframe.kaleidoscope.dggs.core.model.dggs.Collection;
+import ai.terraframe.kaleidoscope.dggs.core.model.dggs.CollectionsAndLinks;
 import ai.terraframe.kaleidoscope.dggs.core.model.dggs.Dggr;
 import ai.terraframe.kaleidoscope.dggs.core.model.dggs.DggsJsonData;
 import ai.terraframe.kaleidoscope.dggs.core.model.dggs.Zones;
@@ -85,5 +87,19 @@ public class MockRemoteDggsService extends RemoteDggsService
       }
     }
 
+  }
+  
+  @Override
+  public Map<String, CollectionsAndLinks> collections() throws IOException, InterruptedException
+  {
+    try (InputStream istream = this.getClass().getResourceAsStream("/collections.json"))
+    {
+      try (Reader reader = new BufferedReader(new InputStreamReader(istream, StandardCharsets.UTF_8)))
+      {
+        ObjectMapper mapper = new ObjectMapper();
+
+        return mapper.readerForMapOf(CollectionsAndLinks.class).readValue(reader);
+      }
+    }
   }
 }

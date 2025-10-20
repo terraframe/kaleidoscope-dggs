@@ -13,7 +13,7 @@ import lombok.NoArgsConstructor;
 
 @Data
 @NoArgsConstructor
-public class Location
+public class Location implements Comparable<Location>
 {
   private Map<String, Object> properties = new HashMap<>();
 
@@ -35,9 +35,17 @@ public class Location
     this.properties.put("label", label);
   }
 
-  public void addProperty(String name, Object value)
+  public Location addProperty(String name, Object value)
   {
     this.properties.put(name, value);
+    
+    return this;
+  }
+
+  @Override
+  public int compareTo(Location arg0)
+  {
+    return this.id.compareTo(arg0.id);
   }
 
 }

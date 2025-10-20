@@ -1,5 +1,7 @@
 package ai.terraframe.kaleidoscope.dggs.core.model.dggs;
 
+import java.util.List;
+
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -9,10 +11,10 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class PropertyData
 {
-  private String depth;
+  private String       depth;
 
-  private Shape  shape;
+  private Shape        shape;
 
-  private String data;
+  private List<Object> data;
 
 }

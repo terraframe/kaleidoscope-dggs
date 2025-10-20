@@ -20,6 +20,8 @@ import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.locationtech.jts.geom.Geometry;
 import org.slf4j.Logger;
@@ -122,7 +124,7 @@ public class ChatService
         }
 
         // The location has been resolved to an uri
-        Location location = page.getLocations().get(0);
+        Location location = page.getLocations().iterator().next();
         String uri = (String) location.getProperties().get("uri");
 
         List<ClientMessage> clone = new LinkedList<>(messages);
@@ -134,13 +136,29 @@ public class ChatService
       }
       else if (toolUse.getName().equals(BedrockConverseService.POWER_INFRASTRUCTURE))
       {
-        List<DggsJsonData> data = dggsjson(toolUse);
+        String[] types = new String[] { "http://terraframe.ai#PowerStation", "http://terraframe.ai#PowerSubstation", "http://terraframe.ai#PowerTransformer" };
 
-        List<Location> features = data.stream() //
+        List<DggsJsonData> zones = dggsjson(toolUse);
+
+        List<Location> features = zones.stream() //
             .flatMap(dggsjon -> this.dggalService.dggsjsonToFeatures(dggsjon).stream()) //
-            .flatMap(feature -> this.jena.getWithinGeometry((Geometry) feature.getDefaultGeometry()).stream()).toList();
+            .flatMap(feature -> this.jena.getWithinGeometry((Geometry) feature.getDefaultGeometry(), types).stream()).toList();
 
-        return new FeatureMessage(toolUse.getToolUseId(), features);
+        return new FeatureMessage(toolUse.getToolUseId(), zones, features);
+      }
+      else if (toolUse.getName().equals(BedrockConverseService.DISSEMINATION_AREAS))
+      {
+        String[] types = new String[] { "http://terraframe.ai#PowerStation", "http://terraframe.ai#PowerSubstation", "http://terraframe.ai#PowerTransformer" };
+
+        List<DggsJsonData> zones = dggsjson(toolUse);
+
+        Set<Location> features = zones.stream() //
+            .flatMap(dggsjon -> this.dggalService.dggsjsonToFeatures(dggsjon).stream()) //
+            .flatMap(feature -> this.jena.getWithinGeometry((Geometry) feature.getDefaultGeometry(), "http://terraframe.ai#ProvidesPower", types).stream()).collect(Collectors.toSet());
+
+        int totalPopulation = features.stream().mapToInt(location -> (int) location.getProperties().get("population")).sum();
+
+        return new FeatureMessage(toolUse.getToolUseId(), zones, features, totalPopulation);
       }
     }
     else if (message.getType().equals(BedrockResponse.Type.INFORMATION))
@@ -178,7 +196,7 @@ public class ChatService
   {
     Map<String, Document> parameters = toolUse.getParameters();
     String uri = parameters.get("uri").asString();
-    String category = parameters.get("category").asString();
+    String collectionId = parameters.get("category").asString();
     Date datetime = parameters.containsKey("date") ? IntervalDeserializer.parse(parameters.get("date").asString()) : null;
     String filter = parameters.containsKey("filter") ? parameters.get("filter").asString() : null;
     Integer zoneDepth = parameters.containsKey("zone-depth") ? parameters.get("zone-depth").asNumber().intValue() : Integer.valueOf(9);
@@ -186,7 +204,7 @@ public class ChatService
     Location location = this.jena.getLocation(uri);
 
     // return geojson(category, location, datetime, filter, zoneDepth);
-    return dggsjson(category, location, datetime, filter, zoneDepth);
+    return dggsjson(collectionId, location, datetime, filter, zoneDepth);
   }
 
   public Message geojson(String uri, String collectionId, Date datetime, String filter, Integer zoneDepth)
@@ -235,7 +253,7 @@ public class ChatService
   private List<DggsJsonData> dggsjson(final String collectionId, final Location location, final Date datetime, final String filter, final Integer zoneDepth) throws IOException, InterruptedException
   {
     Collection collection = this.collectionService.getOrThrow(collectionId);
-
+    
     Dggr dggr = this.dggrService.get(collectionId).orElseThrow(() -> new GenericRestException("Unabled to retrieve DGGR information for collection [" + collectionId + "]"));
 
     Zones zones = this.dggs.zones(collection, dggr, zoneDepth, location, datetime);

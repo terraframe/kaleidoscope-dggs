@@ -7,10 +7,10 @@ import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { PanelModule } from 'primeng/panel';
 import { ToastModule } from 'primeng/toast';
 import { CheckboxModule } from 'primeng/checkbox';
-import { Observable, Subscription, take, withLatestFrom } from 'rxjs';
+import { Observable, take, withLatestFrom } from 'rxjs';
 import { Store } from '@ngrx/store';
-import { v4 as uuidv4 } from 'uuid';
 import * as turf from '@turf/turf';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 import { GeoObject } from '../models/geoobject.model';
 import { StyleConfig } from '../models/style.model';
@@ -22,16 +22,15 @@ import { ConfigurationService } from '../service/configuration-service.service';
 import { defaultQueries, SELECTED_COLOR, HOVER_COLOR, GREEN, RED } from './defaultQueries';
 import { AllGeoJSON, bbox, bboxPolygon, center, union } from '@turf/turf';
 import { ErrorService } from '../service/error-service.service';
-import { ExplorerActions, getNeighbors, getObjects, getStyles, getVectorLayers, getZoomMap, highlightedObject, selectedObject, getWorkflowStep, WorkflowStep, getPage, getZones, getBbox, getWorkflowData, getDggsJson } from '../state/explorer.state';
+import { ExplorerActions, getNeighbors, getObjects, getStyles, getVectorLayers, getZoomMap, highlightedObject, selectedObject, getWorkflowStep, WorkflowStep, getPage, getZones, getWorkflowData, getDggsJson } from '../state/explorer.state';
 import { TabsModule } from 'primeng/tabs';
 import { VectorLayer } from '../models/vector-layer.model';
 import { environment } from '../../environments/environment';
 import { faArrowLeft, faArrowRight, faDownLeftAndUpRightToCenter, faUpRightAndDownLeftFromCenter } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
 import { ButtonModule } from 'primeng/button';
-import { ChatMessage, DggsJson, LocationPage } from '../models/chat.model';
+import { DggsJson, LocationPage } from '../models/chat.model';
 import { TooltipModule } from 'primeng/tooltip';
-import { ChatActions } from '../state/chat.state';
 import { ChatService } from '../service/chat-service.service';
 import { MessageService } from '../service/message.service';
 
@@ -74,16 +73,12 @@ export class ExplorerComponent implements OnInit, OnDestroy, AfterViewInit {
 
     zones$: Observable<Feature[]> = this.store.select(getZones);
 
-    bbox$: Observable<LngLatBoundsLike | null> = this.store.select(getBbox);
-
     zoomMap$: Observable<boolean> = this.store.select(getZoomMap);
 
     geoObjects: GeoObject[] = [];
 
 
     // renderedObjects: string[] = [];
-
-    // onMapObjectsChange: Subscription;
 
     // neighbors$: Observable<GeoObject[]> = this.store.select(getNeighbors);
 
@@ -93,19 +88,13 @@ export class ExplorerComponent implements OnInit, OnDestroy, AfterViewInit {
 
     selectedObject$: Observable<GeoObject | null> = this.store.select(selectedObject);
 
-    onSelectedObjectChange: Subscription;
-
     // highlightedObject$: Observable<GeoObject | null> = this.store.select(highlightedObject);
-
-    // onHighlightedObjectChange: Subscription;
 
     workflowStep$: Observable<WorkflowStep> = this.store.select(getWorkflowStep);
 
     workflowData$: Observable<any> = this.store.select(getWorkflowData);
 
     page$: Observable<LocationPage> = this.store.select(getPage);
-
-    onPageChange: Subscription;
 
     resolvedStyles: StyleConfig = {};
 
@@ -191,16 +180,18 @@ export class ExplorerComponent implements OnInit, OnDestroy, AfterViewInit {
         //     this.renderVectorLayers();
         // });
 
-        this.onSelectedObjectChange = this.selectedObject$.pipe(withLatestFrom(this.zoomMap$, this.styles$)).subscribe(([object, zoomMap, styles]) => {
-            this.resolvedStyles = styles;
+        this.selectedObject$
+            .pipe(takeUntilDestroyed())
+            .pipe(withLatestFrom(this.zoomMap$, this.styles$)).subscribe(([object, zoomMap, styles]) => {
+                this.resolvedStyles = styles;
 
-            this.selectObject(object, zoomMap);
+                this.selectObject(object, zoomMap);
 
-            // Selecting or unselecting an object can change the map size. If we don't resize, we can end up with weird white bars on the side when the attribute panel goes away.
-            setTimeout(() => {
-                this.map?.resize();
-            }, 0);
-        });
+                // Selecting or unselecting an object can change the map size. If we don't resize, we can end up with weird white bars on the side when the attribute panel goes away.
+                setTimeout(() => {
+                    this.map?.resize();
+                }, 0);
+            });
 
         // this.onHighlightedObjectChange = this.highlightedObject$.subscribe(object => {
         //     this.highlightObject(object == null ? undefined : object.properties.uri);
@@ -212,7 +203,8 @@ export class ExplorerComponent implements OnInit, OnDestroy, AfterViewInit {
             this.chatMinimized = step == WorkflowStep.MinimizeChat;
         });
 
-        this.onPageChange = this.page$
+        this.page$
+            .pipe(takeUntilDestroyed())
             .pipe(withLatestFrom(this.styles$, this.zoomMap$))
             .subscribe(([page, styles, zoomMap]) => {
                 this.page = page;
@@ -222,57 +214,53 @@ export class ExplorerComponent implements OnInit, OnDestroy, AfterViewInit {
                 this.render();
             });
 
-        this.zones$.subscribe(zones => {
+        this.zones$
+            .pipe(takeUntilDestroyed())
+            .subscribe(zones => {
+                if (this.initialized) {
+                    const geojson: any = {
+                        type: "FeatureCollection",
+                        features: zones
+                    }
 
-            if (this.initialized) {
-                const geojson: any = {
-                    type: "FeatureCollection",
-                    features: zones
+                    const source = this.map!.getSource('data') as GeoJSONSource;
+                    source.setData(geojson);
                 }
+            })
 
-                const source = this.map!.getSource('data') as GeoJSONSource;
-                source.setData(geojson);
-            }
-        })
+        this.dggsjson$
+            .pipe(takeUntilDestroyed())
+            .subscribe(dggsjsons => {
 
-        this.dggsjson$.subscribe(dggsjsons => {
+                if (this.initialized) {
+                    const features = dggsjsons.flatMap(dggsjson => this.dggsjsonToFeatures(dggsjson));
 
-            if (this.initialized) {
-                const features = dggsjsons.flatMap(dggsjson => this.dggsjsonToFeatures(dggsjson));
+                    const geojson: any = {
+                        type: "FeatureCollection",
+                        features: features
+                    }
 
-                const geojson: any = {
-                    type: "FeatureCollection",
-                    features: features
+                    const arr = features.map(feature => feature.properties.value);
+                    let minVal = Math.min(...arr);
+                    let maxVal = Math.max(...arr);
+
+                    this.map!.setPaintProperty(
+                        'data-shape',
+                        'fill-color',
+                        [
+                            'interpolate',
+                            ['linear'],
+                            ['get', 'value'],
+                            minVal, GREEN,
+                            maxVal, RED
+                        ],
+                    );
+
+                    const source = this.map!.getSource('data') as GeoJSONSource;
+                    source.setData(geojson);
                 }
+            })
 
-                const arr = features.map(feature => feature.properties.value);
-                let minVal = Math.min(...arr);
-                let maxVal = Math.max(...arr);
-
-                this.map!.setPaintProperty(
-                    'data-shape',
-                    'fill-color',
-                    [
-                        'interpolate',
-                        ['linear'],
-                        ['get', 'value'],
-                        minVal, GREEN,
-                        maxVal, RED
-                    ],
-                );
-
-                const source = this.map!.getSource('data') as GeoJSONSource;
-                source.setData(geojson);
-            }
-        })
-
-
-
-        // this.bbox$.subscribe(bbox => {
-        //     if (this.initialized && bbox != null) {
-        //         this.map?.fitBounds(bbox, { padding: 50 });
-        //     }
-        // });
     }
 
     ngOnInit(): void {
@@ -282,10 +270,6 @@ export class ExplorerComponent implements OnInit, OnDestroy, AfterViewInit {
     }
 
     ngOnDestroy(): void {
-        // this.onMapObjectsChange.unsubscribe();
-        // this.onVectorLayersChange.unsubscribe();
-        // this.onSelectedObjectChange.unsubscribe();
-        // this.onHighlightedObjectChange.unsubscribe();
     }
 
     cancelDisambiguation() {
@@ -634,7 +618,8 @@ export class ExplorerComponent implements OnInit, OnDestroy, AfterViewInit {
                         SELECTED_COLOR,
                         HOVER_COLOR
                     ],
-                    'fill-opacity': 0.5
+                    'fill-opacity': 0.5,
+                    "fill-outline-color": "black"
                 },
                 filter: ["all",
                     ["==", "uri", "NONE"] // start with a filter that doesn"t select anything
@@ -695,7 +680,8 @@ export class ExplorerComponent implements OnInit, OnDestroy, AfterViewInit {
                     SELECTED_COLOR,
                     this.typeLegend[type].color
                 ],
-                'fill-opacity': 0.8
+                'fill-opacity': 0.8,
+                "fill-outline-color": "black"
             };
             layerConfig.type = "fill";
         } else if (geometryType === "POINT" || geometryType === "MULTIPOINT") {
@@ -1208,7 +1194,7 @@ export class ExplorerComponent implements OnInit, OnDestroy, AfterViewInit {
 
                 if (keys.length > 0) {
                     const propertyData = propertyMap[keys[0]];
-                    const data = propertyData[0].data.split(",").map(value => value === 'null' ? null : parseFloat(value));
+                    const data = propertyData[0].data;
                     const zones = dggrs.getSubZones(parent, relativeDepth);
 
                     // if (data.length !== zones.length) {

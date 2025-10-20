@@ -295,19 +295,35 @@ public class JenaService
             ?uri a ?type .
             ?uri rdfs:label ?label .
             ?uri ai:GeoObject-code ?code .
-            FILTER (geof:sfContains(?envelope, ?wkt))
-            FILTER (?type IN (?typeA, ?typeB, ?typeC ) )
+            FILTER (geof:sfContains(?envelope, ?wkt))""");
+
+      if (types.length > 0)
+      {
+        statement.append("\n FILTER (?type IN (");
+
+        for (int i = 0; i < types.length; i++)
+        {
+          if (i != 0)
+          {
+            statement.append(", ");
           }
-          LIMIT 100
-                """);
+
+          statement.append("?type" + i);
+        }
+        statement.append("))");
+      }
+
+      statement.append("} LIMIT 100");
 
       // Use ParameterizedSparqlString to inject the URI safely
       ParameterizedSparqlString pss = new ParameterizedSparqlString();
       pss.setCommandText(statement.toString());
       pss.setLiteral("envelope", envelope.toText(), new BaseDatatype("http://www.opengis.net/ont/geosparql#wktLiteral"));
-      pss.setIri("typeA", "http://terraframe.ai#PowerStation");
-      pss.setIri("typeB", "http://terraframe.ai#PowerSubstation");
-      pss.setIri("typeC", "http://terraframe.ai#PowerTransformer");
+
+      for (int i = 0; i < types.length; i++)
+      {
+        pss.setIri("type" + i, types[i]);
+      }
 
       try (QueryExecution qe = conn.query(pss.asQuery()))
       {
@@ -327,6 +343,91 @@ public class JenaService
           Geometry geometry = reader.getGeometry();
 
           results.add(new Location(uri, code, type, label, geometry));
+        }
+      }
+    }
+
+    return results;
+  }
+
+  public List<Location> getWithinGeometry(Geometry envelope, String predicate, String... types)
+  {
+    RDFConnectionRemoteBuilder builder = RDFConnectionRemote.create().destination(properties.getJenaUrl());
+
+    List<Location> results = new ArrayList<Location>();
+
+    WKTWriter.write(new GeometryWrapper(envelope, "http://www.opengis.net/ont/geosparql#wktLiteral"));
+
+    try (RDFConnection conn = builder.build())
+    {
+
+      StringBuilder statement = new StringBuilder();
+      statement.append(PREFIXES + """
+          SELECT ?uri ?code ?label ?type ?wkt ?pop
+          FROM <http://terraframe.ai/g1>
+          WHERE {
+            ?geom geo:asWKT ?sWkt .
+            ?sUri geo:hasGeometry ?geom .
+            ?sUri a ?sType .
+            ?sUri ?pred ?uri .
+            ?uri ai:GeoObject-code ?code .
+            ?uri rdfs:label ?label .
+            ?uri a ?type .
+            OPTIONAL {
+                ?uri ai:DisseminationArea-population ?pop .
+                ?uri geo:hasGeometry ?g .
+                ?g geo:asWKT ?wkt .
+            }
+            FILTER (geof:sfContains(?envelope, ?sWkt))""");
+
+      if (types.length > 0)
+      {
+        statement.append("\n FILTER (?sType IN (");
+
+        for (int i = 0; i < types.length; i++)
+        {
+          if (i != 0)
+          {
+            statement.append(", ");
+          }
+
+          statement.append("?type" + i);
+        }
+        statement.append("))");
+      }
+
+      statement.append("} LIMIT 100");
+
+      // Use ParameterizedSparqlString to inject the URI safely
+      ParameterizedSparqlString pss = new ParameterizedSparqlString();
+      pss.setCommandText(statement.toString());
+      pss.setLiteral("envelope", envelope.toText(), new BaseDatatype("http://www.opengis.net/ont/geosparql#wktLiteral"));
+      pss.setIri("pred", predicate);
+
+      for (int i = 0; i < types.length; i++)
+      {
+        pss.setIri("type" + i, types[i]);
+      }
+
+      try (QueryExecution qe = conn.query(pss.asQuery()))
+      {
+        ResultSet rs = qe.execSelect();
+
+        while (rs.hasNext())
+        {
+          QuerySolution qs = rs.next();
+
+          String uri = qs.getResource("uri").getURI();
+          String code = qs.getLiteral("code").getString();
+          String wkt = qs.getLiteral("wkt").getString();
+          String label = qs.getLiteral("label").getString();
+          String type = readString(qs, "type");
+          Integer pop = qs.contains("pop") ? qs.getLiteral("pop").getInt() : 0;
+
+          WKTReader reader = WKTReader.extract(wkt);
+          Geometry geometry = reader.getGeometry();
+
+          results.add(new Location(uri, code, type, label, geometry).addProperty("population", pop));
         }
       }
     }

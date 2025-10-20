@@ -6,7 +6,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.lang3.stream.Streams;
 import org.apache.jena.geosparql.implementation.jts.CustomCoordinateSequence;
 import org.dggal.DGGAL;
 import org.dggal.DggalDggrs;
@@ -82,7 +81,7 @@ public class DggalService
           {
             String key = propertyMap.keySet().iterator().next();
             List<PropertyData> propertyData = propertyMap.get(key);
-            List<Double> data = Streams.of(propertyData.get(0).getData().split(",")).map(value -> value.equals("null") ? null : Double.parseDouble(value)).toList();
+            List<Object> data = propertyData.get(0).getData();
 
             long[] zones = dggrs.getSubZones(parent, relativeDepth);
 

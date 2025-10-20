@@ -35,7 +35,6 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
 import ai.terraframe.kaleidoscope.dggs.core.config.AppProperties;
-import ai.terraframe.kaleidoscope.dggs.core.model.CollectionAttribute;
 import ai.terraframe.kaleidoscope.dggs.core.model.bedrock.BedrockResponse;
 import ai.terraframe.kaleidoscope.dggs.core.model.bedrock.InformationResponse;
 import ai.terraframe.kaleidoscope.dggs.core.model.bedrock.ToolUseResponse;
@@ -68,6 +67,8 @@ public class BedrockConverseService
 
   public static final String  POWER_INFRASTRUCTURE = "Power_Infrastructure";
 
+  public static final String  DISSEMINATION_AREAS  = "Dissemination_Area";
+
   private static final int    MAX_TIMEOUT_MINUTES  = 5;
 
   private static final Logger log                  = LoggerFactory.getLogger(BedrockConverseService.class);
@@ -76,7 +77,7 @@ public class BedrockConverseService
   private AppProperties       properties;
 
   @Autowired
-  private MetadataService     service;
+  private QueryableService    service;
 
   public Tool getLocationDataToolSpec()
   {
@@ -175,6 +176,42 @@ public class BedrockConverseService
         .build());
   }
 
+  public Tool getDissemenationAreaToolSpec()
+  {
+    HashMap<String, Document> properties = new HashMap<>();
+    properties.put("uri", Document.mapBuilder() //
+        .putString("type", "string") //
+        .putString("description", "The uri of the location") //
+        .build());
+    properties.put("category", Document.mapBuilder() //
+        .putString("type", "string") //
+        .putString("description", "The subject category") //
+        .build());
+    properties.put("date", Document.mapBuilder() //
+        .putString("type", "string") //
+        .putString("format", "date-time") //
+        .putString("description", "Optional date in ISO 8601 format (e.g., 2025-09-30T00:00:00Z)") //
+        .build());
+    properties.put("filter", Document.mapBuilder() //
+        .putString("type", "string") //
+        .putString("description", "Optional filter criteria. For example elevation > 2.3)") //
+        .build());
+    properties.put("zone-depth", Document.mapBuilder() //
+        .putString("type", "integer") //
+        .putString("description", "Optional zone depth in which to get the data)") //
+        .build());
+
+    return Tool.fromToolSpec(ToolSpecification.builder() //
+        .name(DISSEMINATION_AREAS) //
+        .description("Analyze the impact to dissementation area features connected to data collection zones from the power grid.") //
+        .inputSchema(schema -> schema.json(Document.mapBuilder() //
+            .putString("type", "object") //
+            .putMap("properties", properties) //
+            .putList("required", List.of(Document.fromString("uri"), Document.fromString("category"))) //
+            .build()))
+        .build());
+  }
+
   public BedrockResponse execute(List<Collection> collections, List<ClientMessage> messages)
   {
     try (BedrockRuntimeAsyncClient client = getClient())
@@ -196,26 +233,31 @@ public class BedrockConverseService
           builder.append(" -- The collection has the following time intervals: " + temporal.toDescription() + "\n");
         }
 
-        List<CollectionAttribute> attributes = this.service.getAttributes(collection);
-
-        if (attributes.size() > 0)
-        {
-          builder.append(" -- The collection supports the following attributes for filtering: \n" + StringUtils.join(attributes.stream().map(a -> a.getName() + " - " + a.getDescription()).toList(), ","));
-        }
+        this.service.get(collection.getId()).ifPresent(attributes -> {
+          if (attributes.size() > 0)
+          {
+            builder.append(" -- The collection supports the following attributes for filtering: \n" + StringUtils.join(attributes.stream().map(a -> a.getName() + " - " + a.getDescription()).toList(), ","));
+          }
+        });
 
         systemPrompt.append(builder + "\n");
       });
 
       systemPrompt.append("""
 
-          Use the 'Name_Resolution' to resolve a location name to its location uri. If you can determine
-          the subject category and a location uri then use the 'Location_Data' tool or if the question is
-          about power use the 'Power_Infrastructure' tool. Otherwise ask follow-up
-          questions to determine the subject category and location uir. If the subject is not one of the
-          options then tell the user that you do not have any data for that subject. When using the 'Location_Data'
-          tool the user can additionally specify filter criteria using for the 'filter' attribute for the defined
-          attributes above.  The format of the filter criteria should be generated as CQL2 Text.  The following are
-          examples of CQL2 filters:
+          If the subject is not one of the category options then tell the user that you do not have any data for that subject.
+          You can use the 'Name_Resolution' to resolve a location name to its location uri. If you can determine
+          the subject category and a location uri then you can use one of the following tools based on the users question:
+
+          'Dissementation_Analysis' - tool to analyze for connected disesementation areas
+          'Power_Infrastructure' - tool to get power infrastructure data
+          'Location_Data' - tool to get zone information
+
+          Otherwise ask follow-up questions to determine the subject category and location uir.
+
+          When using the 'Dissementation_Analysis', 'Power_Infrastructure', or the 'Location_Data' tools the user can additionally
+          specify filter criteria using for the 'filter' attribute for the defined attributes above.  The format of the filter
+          criteria should be generated as CQL2 Text.  The following are examples of CQL2 Text filters:
 
           - Filter Features by Attribute
           ```
@@ -237,6 +279,10 @@ public class BedrockConverseService
           name LIKE 'New%'
           ```
 
+          ONLY allow filtering on attributes of the collection. If the user tries to filter on an
+          unknown attribute tell them you don't support filtering on that attribute and list the ones
+          that are supported for the collection.
+
           """);
 
       SystemContentBlock system = SystemContentBlock.fromText(systemPrompt.toString());
@@ -247,12 +293,12 @@ public class BedrockConverseService
             .role(message.getRole().equals(SenderRole.USER) ? ConversationRole.USER : ConversationRole.ASSISTANT).build();
       }).toList();
 
-      String modelId = "us.anthropic.claude-3-7-sonnet-20250219-v1:0";
+      String modelId = this.properties.getModel();
 
       CompletableFuture<ConverseResponse> request = client.converse(params -> params //
           .modelId(modelId) //
           .system(system) //
-          .toolConfig(config -> config.tools(getNameResolutionToolSpec(), getLocationDataToolSpec(), getPowerIntrastructureToolSpec())) //
+          .toolConfig(config -> config.tools(getNameResolutionToolSpec(), getLocationDataToolSpec(), getPowerIntrastructureToolSpec(), getDissemenationAreaToolSpec())) //
           .messages(bedrockMessages) //
           .inferenceConfig(config -> config //
               .maxTokens(512) //
@@ -346,8 +392,12 @@ public class BedrockConverseService
       String toolUseId = (String) data.get("toolUseId");
       String locationName = (String) data.get("locationName");
 
-      return "ToolUseBlock(ToolUseId=" + toolUseId + ", Name=Name_Resolution, Input={\"locationName\": \"" + locationName + "\"})";
+      JsonObject input = new JsonObject();
+      input.addProperty("locationName", locationName);
+
+      return "ToolUseBlock(ToolUseId=" + toolUseId + ", Name=" + NAME_RESOLUTION + ", Input=" + input.toString() + ")";
     }
+    // Client response messages
     else if (message.getMessageType().equals(MessageType.LOCATION_RESOLVED))
     {
       Map<String, Object> data = message.getData();
@@ -355,18 +405,30 @@ public class BedrockConverseService
       String toolUseId = (String) data.get("toolUseId");
       String uri = (String) data.get("uri");
 
-      JsonArray toolResults = new JsonArray();
+      JsonObject parameters = new JsonObject();
+      parameters.addProperty("uri", uri);
 
-      JsonObject toolResult = new JsonObject();
-      toolResult.addProperty("toolUseId", toolUseId);
-      toolResult.addProperty("content", "[{\"json\": {'uri': '" + uri + "'}}]");
-
-      toolResults.add(toolResult);
-
-      return toolResults.toString();
+      return buildToolUse(toolUseId, parameters);
     }
 
     return message.getText();
   }
 
+  private String buildToolUse(String toolUseId, JsonObject parameters)
+  {
+    JsonObject format = new JsonObject();
+    format.add("json", parameters);
+
+    JsonArray content = new JsonArray();
+    content.add(format);
+
+    JsonObject toolResult = new JsonObject();
+    toolResult.addProperty("toolUseId", toolUseId);
+    toolResult.addProperty("content", content.toString());
+
+    JsonArray toolResults = new JsonArray();
+    toolResults.add(toolResult);
+
+    return toolResults.toString();
+  }
 }

@@ -1,15 +1,15 @@
 import { Component, inject, OnDestroy, OnInit } from '@angular/core';
 import { LetDirective } from '@ngrx/component';
 import { CommonModule } from '@angular/common';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 import { TableModule } from 'primeng/table';
 import { PaginatorModule, PaginatorState } from 'primeng/paginator';
 
 import { GeoObject } from '../models/geoobject.model';
-import { Observable, Subscription, take } from 'rxjs';
+import { Observable, take } from 'rxjs';
 import { Store } from '@ngrx/store';
-import { ExplorerActions, getPage, getWorkflowStep, highlightedObject, selectedObject, WorkflowStep } from '../state/explorer.state';
-import { ChatService } from '../service/chat-service.service';
+import { ExplorerActions, getHasPopulation, getPage, getWorkflowStep, highlightedObject, selectedObject, WorkflowStep } from '../state/explorer.state';
 import { LocationPage } from '../models/chat.model';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
 
@@ -29,23 +29,27 @@ export class ResultsTableComponent implements OnInit, OnDestroy {
 
     highlightedObject$: Observable<GeoObject | null> = this.store.select(highlightedObject);
 
-    onHighlightedObjectChange: Subscription;
-
-    public highlightedObjectUri: string | null | undefined;
+    hasPopulation$: Observable<boolean> = this.store.select(getHasPopulation);
 
     workflowStep$: Observable<WorkflowStep> = this.store.select(getWorkflowStep);
 
-    onWorkflowStepChange: Subscription;
+    highlightedObjectUri: string | null | undefined;
 
-    public workflowStep: WorkflowStep = WorkflowStep.AiChatAndResults;
+    workflowStep: WorkflowStep = WorkflowStep.AiChatAndResults;
+
+    hasPopulation: boolean = false;
 
     constructor() {
-        this.onHighlightedObjectChange = this.highlightedObject$.subscribe(object => {
+        this.highlightedObject$.pipe(takeUntilDestroyed()).subscribe(object => {
             this.highlightObject(object == null ? undefined : object.properties.uri);
         });
 
-        this.onWorkflowStepChange = this.workflowStep$.subscribe(step => {
+        this.workflowStep$.pipe(takeUntilDestroyed()).subscribe(step => {
             this.workflowStep = step;
+        });
+
+        this.hasPopulation$.pipe(takeUntilDestroyed()).subscribe(hasPopulation => {
+            this.hasPopulation = hasPopulation;
         });
     }
 
@@ -54,7 +58,6 @@ export class ResultsTableComponent implements OnInit, OnDestroy {
     }
 
     ngOnDestroy(): void {
-
     }
 
     calculateScrollHeight(): string {

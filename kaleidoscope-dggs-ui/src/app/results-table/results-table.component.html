@@ -11,7 +11,7 @@
                         <th>Label</th>
                         <th>Code</th>
                         <th>Type</th>
-                        <!-- <th>Uri</th> -->
+                        <th *ngIf="hasPopulation">Population</th>
                     </tr>
                 </ng-template>
                 <ng-template #body let-object>
@@ -20,8 +20,7 @@
                         <td>{{ object.properties.label }}</td>
                         <td>{{ object.properties.code }}</td>
                         <td>{{ object.properties.type.split("#")[1] }}</td>
-                        <!-- <td>{{ object.properties.uri }}</td> -->
-
+                        <td *ngIf="hasPopulation">{{ object.properties.population }}</td>
                     </tr>
                 </ng-template>
 

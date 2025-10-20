@@ -47,7 +47,7 @@ public class ClientMessage
     this.data = new HashMap<>();
   }
 
-  public ClientMessage put(String key, String value)
+  public ClientMessage put(String key, Object value)
   {
     this.data.put(key, value);
 

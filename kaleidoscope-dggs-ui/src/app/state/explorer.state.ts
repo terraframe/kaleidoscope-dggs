@@ -17,7 +17,7 @@ export const ExplorerActions = createActionGroup({
 
         'Set Zones': props<{ collection: ZoneCollection }>(),
         // 'Add GeoObject': props<{ object: GeoObject }>(),
-        'Set Page': props<{ page: LocationPage }>(),
+        'Set Page': props<{ page: LocationPage, hasPopulation?: boolean }>(),
         // 'Add Neighbor': props<{ object: GeoObject }>(),
         // 'Set Neighbors': props<{ objects: GeoObject[], zoomMap: number[] }>(),
         'Select GeoObject': props<{ object: GeoObject, zoomMap: boolean } | null>(),
@@ -42,7 +42,6 @@ export enum WorkflowStep {
 export interface ExplorerStateModel {
     dggsjson: DggsJson[] // Zones as dggs json data
     zones: Feature[]; // Zones as geojson data
-    bbox: LngLatBoundsLike | null;
     neighbors: GeoObject[];
     styles: StyleConfig;
     selectedObject: GeoObject | null;
@@ -52,12 +51,12 @@ export interface ExplorerStateModel {
     page: LocationPage;
     workflowStep: WorkflowStep;
     workflowData?: any;
+    hasPopulation: boolean;
 }
 
 export const initialState: ExplorerStateModel = {
     dggsjson: [], // Zones as dggs json data
-    zones: [], 
-    bbox: null,
+    zones: [],
     neighbors: [],
     styles: {},
     selectedObject: null,
@@ -70,7 +69,8 @@ export const initialState: ExplorerStateModel = {
         limit: 100,
         offset: 0,
         count: 0
-    }
+    },
+    hasPopulation: false
 }
 
 // Helper function for resolving missing styles based on the provided object types
@@ -124,7 +124,7 @@ export const explorerReducer = createReducer(
             ...state,
             dggsjson: dggsjson,
         };
-    }),    
+    }),
 
     // // Set all neighbors
     // on(ExplorerActions.setNeighbors, (state, { objects, zoomMap }) => {
@@ -140,14 +140,15 @@ export const explorerReducer = createReducer(
     // }),
 
     // Set all geo objects
-    on(ExplorerActions.setPage, (state, { page }) => {
+    on(ExplorerActions.setPage, (state, { page, hasPopulation }) => {
 
         const styles = resolveMissingStyles(state.styles, page.locations);
 
         return {
             ...state,
             styles: styles != null ? styles : state.styles,
-            page
+            page,
+            hasPopulation: (hasPopulation != null && hasPopulation)
         };
     }),
 
@@ -245,13 +246,12 @@ export const getDggsJson = createSelector(selector, (s) => {
     return s.dggsjson;
 });
 
-
 export const getZones = createSelector(selector, (s) => {
     return s.zones;
 });
 
-export const getBbox = createSelector(selector, (s) => {
-    return s.bbox;
+export const getHasPopulation = createSelector(selector, (s) => {
+    return s.hasPopulation;
 });
 
 export const getObjects = createSelector(selector, (s) => {

@@ -2,8 +2,10 @@ package ai.terraframe.kaleidoscope.dggs.core.service;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
 
 import org.apache.jena.geosparql.implementation.parsers.wkt.WKTReader;
 import org.junit.Assert;
@@ -42,7 +44,7 @@ public class JenaServiceIntegrationTest
 
     Assert.assertEquals(2, page.getCount());
 
-    Location location = page.getLocations().get(0);
+    Location location = page.getLocations().iterator().next();
     Geometry geometry = location.getGeometry();
 
     Assert.assertNotNull(geometry);
@@ -74,13 +76,14 @@ public class JenaServiceIntegrationTest
   public void testGetWithinGeometry() throws InterruptedException, ExecutionException, TimeoutException
   {
     // -97.34912125 : -96.95599652, 49.71363749 : 49.9938672
+    String[] types = new String[] { "http://terraframe.ai#PowerStation", "http://terraframe.ai#PowerSubstation", "http://terraframe.ai#PowerTransformer" };
 
     String wkt = "POLYGON((-97.449031 49.613756, -97.449031 50.093865, -96.855997 50.093865, -96.855997 49.613756, -97.449031 49.613756))";
 
     WKTReader reader = WKTReader.extract(wkt);
     Geometry envelope = reader.getGeometry();
 
-    List<Location> locations = this.service.getWithinGeometry(envelope);
+    List<Location> locations = this.service.getWithinGeometry(envelope, types);
 
     Assert.assertEquals(23, locations.size());
   }
@@ -90,11 +93,27 @@ public class JenaServiceIntegrationTest
   {
     // -97.34912125 : -96.95599652, 49.71363749 : 49.9938672
     DggsJsonData dggsjson = this.dggsService.json(null, null, null, null, null, null);
+    String[] types = new String[] { "http://terraframe.ai#PowerStation", "http://terraframe.ai#PowerSubstation", "http://terraframe.ai#PowerTransformer" };
 
     List<Location> locations = this.dggalService.dggsjsonToFeatures(dggsjson).stream() //
-        .flatMap(feature -> this.service.getWithinGeometry((Geometry) feature.getDefaultGeometry()).stream()).toList();
+        .flatMap(feature -> this.service.getWithinGeometry((Geometry) feature.getDefaultGeometry(), types).stream()).toList();
 
     Assert.assertEquals(3, locations.size());
+  }
+
+  @Test
+  public void testDggalToDissemenationArea() throws InterruptedException, ExecutionException, TimeoutException, IOException
+  {
+    // -97.34912125 : -96.95599652, 49.71363749 : 49.9938672
+    DggsJsonData dggsjson = this.dggsService.json(null, null, null, null, null, null);
+    String[] types = new String[] { "http://terraframe.ai#PowerStation", "http://terraframe.ai#PowerSubstation", "http://terraframe.ai#PowerTransformer" };
+
+    Set<Location> locations = this.dggalService.dggsjsonToFeatures(dggsjson).stream() //
+        .flatMap(feature -> this.service.getWithinGeometry((Geometry) feature.getDefaultGeometry(), "http://terraframe.ai#ProvidesPower", types).stream()) //
+        .collect(Collectors.toSet());
+
+    Assert.assertEquals(70, locations.size());
+    Assert.assertEquals(340, locations.iterator().next().getProperties().get("population"));
   }
 
 }

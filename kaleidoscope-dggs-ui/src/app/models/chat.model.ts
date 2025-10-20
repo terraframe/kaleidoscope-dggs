@@ -49,13 +49,13 @@ export interface Value {
 }
 
 export interface Properties {
-  [key: string]: PropertyData[]
+  [key: string]: PropertyData[];
 }
 
 export interface PropertyData {
-  depth: string
-  shape: Shape
-  data: string
+  depth: string;
+  shape: Shape;
+  data: any[];
 }
 
 export interface Shape {
@@ -71,5 +71,6 @@ export interface Message {
   toolUseId?: string;
   locationName?: string;
   zones?: DggsJson[];
+  population?: number;
 }
 
