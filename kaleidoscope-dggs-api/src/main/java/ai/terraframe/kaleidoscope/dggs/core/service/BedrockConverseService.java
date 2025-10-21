@@ -35,6 +35,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
 import ai.terraframe.kaleidoscope.dggs.core.config.AppProperties;
+import ai.terraframe.kaleidoscope.dggs.core.model.CollectionAttribute;
 import ai.terraframe.kaleidoscope.dggs.core.model.bedrock.BedrockResponse;
 import ai.terraframe.kaleidoscope.dggs.core.model.bedrock.InformationResponse;
 import ai.terraframe.kaleidoscope.dggs.core.model.bedrock.ToolUseResponse;
@@ -61,23 +62,23 @@ import software.amazon.awssdk.services.bedrockruntime.model.ToolUseBlock;
 @Service
 public class BedrockConverseService
 {
-  public static final String  LOCATION_DATA        = "Location_Data";
+  public static final String        LOCATION_DATA        = "Location_Data";
 
-  public static final String  NAME_RESOLUTION      = "Name_Resolution";
+  public static final String        NAME_RESOLUTION      = "Name_Resolution";
 
-  public static final String  POWER_INFRASTRUCTURE = "Power_Infrastructure";
+  public static final String        POWER_INFRASTRUCTURE = "Power_Infrastructure";
 
-  public static final String  DISSEMINATION_AREAS  = "Dissemination_Area";
+  public static final String        DISSEMINATION_AREAS  = "Dissemination_Area";
 
-  private static final int    MAX_TIMEOUT_MINUTES  = 5;
+  private static final int          MAX_TIMEOUT_MINUTES  = 5;
 
-  private static final Logger log                  = LoggerFactory.getLogger(BedrockConverseService.class);
-
-  @Autowired
-  private AppProperties       properties;
+  private static final Logger       log                  = LoggerFactory.getLogger(BedrockConverseService.class);
 
   @Autowired
-  private QueryableService    service;
+  private AppProperties             properties;
+
+  @Autowired
+  private CollectionMetadataService service;
 
   public Tool getLocationDataToolSpec()
   {
@@ -233,7 +234,10 @@ public class BedrockConverseService
           builder.append(" -- The collection has the following time intervals: " + temporal.toDescription() + "\n");
         }
 
-        this.service.get(collection.getId()).ifPresent(attributes -> {
+        this.service.get(collection.getId()).ifPresent(metadata -> {
+
+          List<CollectionAttribute> attributes = metadata.getAttributes();
+
           if (attributes.size() > 0)
           {
             builder.append(" -- The collection supports the following attributes for filtering: \n" + StringUtils.join(attributes.stream().map(a -> a.getName() + " - " + a.getDescription()).toList(), ","));

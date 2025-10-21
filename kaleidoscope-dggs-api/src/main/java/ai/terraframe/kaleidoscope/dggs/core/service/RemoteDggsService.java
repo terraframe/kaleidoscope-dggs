@@ -28,8 +28,9 @@ import ai.terraframe.kaleidoscope.dggs.core.config.AppProperties;
 import ai.terraframe.kaleidoscope.dggs.core.model.GenericRestException;
 import ai.terraframe.kaleidoscope.dggs.core.model.Location;
 import ai.terraframe.kaleidoscope.dggs.core.model.dggs.Collection;
+import ai.terraframe.kaleidoscope.dggs.core.model.dggs.CollectionDggs;
 import ai.terraframe.kaleidoscope.dggs.core.model.dggs.CollectionsAndLinks;
-import ai.terraframe.kaleidoscope.dggs.core.model.dggs.Dggr;
+import ai.terraframe.kaleidoscope.dggs.core.model.dggs.Dggrs;
 import ai.terraframe.kaleidoscope.dggs.core.model.dggs.DggrsAndLinks;
 import ai.terraframe.kaleidoscope.dggs.core.model.dggs.DggsJsonData;
 import ai.terraframe.kaleidoscope.dggs.core.model.dggs.Interval;
@@ -127,7 +128,41 @@ public class RemoteDggsService implements RemoteDggsServiceIF
   }
 
   @Override
-  public Zones zones(Collection collection, Dggr dggr, Integer zoneLevel, Location location, Date datetime) throws IOException, InterruptedException
+  public CollectionDggs dggs(String baseUrl, String collectionId, String dggrsId) throws IOException, InterruptedException
+  {
+    String url = baseUrl + "/collections/" + collectionId + "/dggs/" + dggrsId;
+
+    String params = "f=json";
+
+    HttpRequest request = HttpRequest.newBuilder() //
+        .uri(URI.create(url + "?" + params)) //
+        .header("Content-Type", "application/json") //
+        .GET().build();
+
+    HttpClient client = HttpClient.newHttpClient();
+
+    HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+    if (response.statusCode() == 200)
+    {
+      String body = response.body();
+
+      ObjectMapper mapper = new ObjectMapper();
+      CollectionDggs value = mapper.readerFor(CollectionDggs.class).readValue(body);
+
+      return value;
+    }
+
+    String body = response.body();
+
+    System.out.println("Error for request[" + request.toString() + "]");
+
+    // TODO: Handle error message
+    throw new RuntimeException(body);
+  }
+
+  @Override
+  public Zones zones(Collection collection, Dggrs dggr, Integer zoneLevel, Location location, Date datetime) throws IOException, InterruptedException
   {
     Geometry geometry = location.getGeometry();
     Envelope envelope = geometry.getEnvelopeInternal();
@@ -136,7 +171,7 @@ public class RemoteDggsService implements RemoteDggsServiceIF
   }
 
   @Override
-  public Zones zones(Collection collection, Dggr dggr, Integer zoneLevel, Envelope envelope, Date datetime) throws IOException, InterruptedException
+  public Zones zones(Collection collection, Dggrs dggr, Integer zoneLevel, Envelope envelope, Date datetime) throws IOException, InterruptedException
   {
     String url = collection.getUrl() + "/collections/" + collection.getId() + "/dggs/" + dggr.getId() + "/zones";
 
@@ -182,7 +217,7 @@ public class RemoteDggsService implements RemoteDggsServiceIF
   }
 
   @Override
-  public JsonArray geojson(Collection collection, Dggr dggrs, String zoneId, Integer zoneDepth, Date datetime, String filter) throws IOException, InterruptedException
+  public JsonArray geojson(Collection collection, Dggrs dggrs, String zoneId, Integer zoneDepth, Date datetime, String filter) throws IOException, InterruptedException
   {
     // https://ogc-dggs-testing.fmecloud.com/api/collections/winnipeg-dem/dggs/ISEA3H/zones/G0-51FC9-A/data?f=html&zone-depth=7
 
@@ -231,7 +266,7 @@ public class RemoteDggsService implements RemoteDggsServiceIF
   }
 
   @Override
-  public DggsJsonData json(Collection collection, Dggr dggrs, String zoneId, Integer zoneDepth, Date datetime, String filter) throws IOException, InterruptedException
+  public DggsJsonData json(Collection collection, Dggrs dggrs, String zoneId, Integer zoneDepth, Date datetime, String filter) throws IOException, InterruptedException
   {
     // https://ogc-dggs-testing.fmecloud.com/api/collections/winnipeg-dem/dggs/ISEA3H/zones/G0-51FC9-A/data?f=html&zone-depth=7
 
@@ -255,12 +290,12 @@ public class RemoteDggsService implements RemoteDggsServiceIF
         .uri(URI.create(url + "?" + params)) //
         .header("Content-Type", "application/json") //
         .GET().build();
+    
+    System.out.println("Remote request: [" + request.toString() + "]");
 
     HttpClient client = HttpClient.newHttpClient();
 
     HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-
-    System.out.println("Remote request: [" + request.toString() + "]");
 
     if (response.statusCode() == 200)
     {
@@ -278,7 +313,7 @@ public class RemoteDggsService implements RemoteDggsServiceIF
   }
 
   @Override
-  public String html(Collection collection, Dggr dggr, String zoneId, Integer zoneDepth) throws IOException, InterruptedException
+  public String html(Collection collection, Dggrs dggr, String zoneId, Integer zoneDepth) throws IOException, InterruptedException
   {
     // https://ogc-dggs-testing.fmecloud.com/api/collections/winnipeg-dem/dggs/ISEA3H/zones/G0-51FC9-A/data?f=html&zone-depth=7
 

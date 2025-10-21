@@ -31,6 +31,7 @@ import org.springframework.stereotype.Service;
 
 import com.google.gson.JsonArray;
 
+import ai.terraframe.kaleidoscope.dggs.core.model.CollectionMetadata;
 import ai.terraframe.kaleidoscope.dggs.core.model.GenericRestException;
 import ai.terraframe.kaleidoscope.dggs.core.model.Location;
 import ai.terraframe.kaleidoscope.dggs.core.model.LocationPage;
@@ -39,7 +40,6 @@ import ai.terraframe.kaleidoscope.dggs.core.model.bedrock.BedrockResponse;
 import ai.terraframe.kaleidoscope.dggs.core.model.bedrock.InformationResponse;
 import ai.terraframe.kaleidoscope.dggs.core.model.bedrock.ToolUseResponse;
 import ai.terraframe.kaleidoscope.dggs.core.model.dggs.Collection;
-import ai.terraframe.kaleidoscope.dggs.core.model.dggs.Dggr;
 import ai.terraframe.kaleidoscope.dggs.core.model.dggs.DggsJsonData;
 import ai.terraframe.kaleidoscope.dggs.core.model.dggs.Zones;
 import ai.terraframe.kaleidoscope.dggs.core.model.message.BasicMessage;
@@ -55,25 +55,25 @@ import software.amazon.awssdk.core.document.Document;
 @Service
 public class ChatService
 {
-  private static final Logger    log = LoggerFactory.getLogger(ChatService.class);
+  private static final Logger       log = LoggerFactory.getLogger(ChatService.class);
 
   @Autowired
-  private BedrockConverseService bedrock;
+  private BedrockConverseService    bedrock;
 
   @Autowired
-  private JenaService            jena;
+  private JenaService               jena;
 
   @Autowired
-  private RemoteDggsServiceIF    dggs;
+  private RemoteDggsServiceIF       dggs;
 
   @Autowired
-  private CollectionService      collectionService;
+  private CollectionService         collectionService;
 
   @Autowired
-  private DggrsService           dggrService;
+  private CollectionMetadataService dggrService;
 
   @Autowired
-  private DggalService           dggalService;
+  private DggalService              dggalService;
 
   public Message query(List<ClientMessage> messages)
   {
@@ -231,17 +231,19 @@ public class ChatService
   {
     Collection collection = this.collectionService.getOrThrow(collectionId);
 
-    Dggr dggr = this.dggrService.get(collectionId).orElseThrow(() -> new GenericRestException("Unabled to retrieve DGGR information for collection [" + collectionId + "]"));
+    CollectionMetadata metadata = this.dggrService.get(collectionId).orElseThrow(() -> new GenericRestException("Unabled to retrieve DGGR information for collection [" + collectionId + "]"));
 
-    Zones zones = this.dggs.zones(collection, dggr, zoneDepth, location, datetime);
+    Zones zones = this.dggs.zones(collection, metadata.getDggrs(), zoneDepth, location, datetime);
 
     if (zones.getZones().size() > 0)
     {
+      Integer subzoneDepth = metadata.getDggs().getMaxRefinementLevel() - zoneDepth;
+
       JsonArray features = new JsonArray();
 
       for (String zoneId : zones.getZones())
       {
-        features.addAll(this.dggs.geojson(collection, dggr, zoneId, null, datetime, filter));
+        features.addAll(this.dggs.geojson(collection, metadata.getDggrs(), zoneId, subzoneDepth, datetime, filter));
       }
 
       return new ZoneMessage(new ZoneCollection(location.getGeometry().getEnvelopeInternal(), features));
@@ -253,17 +255,20 @@ public class ChatService
   private List<DggsJsonData> dggsjson(final String collectionId, final Location location, final Date datetime, final String filter, final Integer zoneDepth) throws IOException, InterruptedException
   {
     Collection collection = this.collectionService.getOrThrow(collectionId);
-    
-    Dggr dggr = this.dggrService.get(collectionId).orElseThrow(() -> new GenericRestException("Unabled to retrieve DGGR information for collection [" + collectionId + "]"));
 
-    Zones zones = this.dggs.zones(collection, dggr, zoneDepth, location, datetime);
+    CollectionMetadata metadata = this.dggrService.get(collectionId).orElseThrow(() -> new GenericRestException("Unabled to retrieve DGGR information for collection [" + collectionId + "]"));
+
+    Zones zones = this.dggs.zones(collection, metadata.getDggrs(), zoneDepth, location, datetime);
 
     if (zones.getZones().size() > 0)
     {
+//      Integer subzoneDepth = metadata.getDggs().getMaxRefinementLevel() - zoneDepth;
+      Integer subzoneDepth = null;
+
       List<DggsJsonData> data = zones.getZones().stream().map(zoneId -> {
         try
         {
-          return this.dggs.json(collection, dggr, zoneId, null, datetime, filter);
+          return this.dggs.json(collection, metadata.getDggrs(), zoneId, subzoneDepth, datetime, filter);
         }
         catch (IOException | InterruptedException e)
         {

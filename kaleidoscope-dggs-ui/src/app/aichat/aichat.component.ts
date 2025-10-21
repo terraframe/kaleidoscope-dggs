@@ -1,6 +1,7 @@
 import { Component, HostListener, inject, Input } from '@angular/core';
 import { FormsModule } from '@angular/forms'; // <-- Import FormsModule
 import { CommonModule } from '@angular/common';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ButtonModule } from 'primeng/button';
 import { TooltipModule } from 'primeng/tooltip';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
@@ -15,9 +16,6 @@ import { ChatMessage } from '../models/chat.model';
 import { ChatActions, getMessages, getSessionId } from '../state/chat.state';
 import { ErrorService } from '../service/error-service.service';
 import { ExplorerActions, getWorkflowData, getWorkflowStep, WorkflowStep } from '../state/explorer.state';
-import { ExplorerService } from '../service/explorer.service';
-import { GeoObject } from '../models/geoobject.model';
-import { debounce } from 'lodash';
 import { MessageService } from '../service/message.service';
 
 @Component({
@@ -35,12 +33,8 @@ export class AichatComponent {
   message: string = '';
 
   messages$: Observable<ChatMessage[]> = this.store.select(getMessages);
-
-  onMessagesChange: Subscription;
-
   workflowStep$: Observable<WorkflowStep> = this.store.select(getWorkflowStep);
   workflowData$: Observable<any> = this.store.select(getWorkflowData);
-  onWorkflowStepChange: Subscription;
 
   public loading: boolean = false;
   public mapLoading: boolean = false;
@@ -54,15 +48,15 @@ export class AichatComponent {
     private messageService: MessageService,
     private errorService: ErrorService) {
 
-    this.onMessagesChange = this.messages$.subscribe(messages => {
+    this.messages$.pipe(takeUntilDestroyed()).subscribe(messages => {
       this.renderedMessages = [...messages].reverse();
     });
 
 
-    this.onWorkflowStepChange = combineLatest([
+    combineLatest([
       this.workflowStep$,
       this.workflowData$
-    ]).subscribe(([step, data]) => {
+    ]).pipe(takeUntilDestroyed()).subscribe(([step, data]) => {
       if (step === WorkflowStep.AiChatAndResults && data != null) {
 
         if (data.action === 'NAME_RESOLUTION') {
@@ -86,8 +80,6 @@ export class AichatComponent {
   }
 
   ngOnDestroy(): void {
-    this.onMessagesChange.unsubscribe();
-    this.onWorkflowStepChange.unsubscribe();
   }
 
   send(message: ChatMessage): void {

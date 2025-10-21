@@ -19,7 +19,7 @@ import com.google.gson.JsonParser;
 
 import ai.terraframe.kaleidoscope.dggs.core.model.dggs.Collection;
 import ai.terraframe.kaleidoscope.dggs.core.model.dggs.CollectionsAndLinks;
-import ai.terraframe.kaleidoscope.dggs.core.model.dggs.Dggr;
+import ai.terraframe.kaleidoscope.dggs.core.model.dggs.Dggrs;
 import ai.terraframe.kaleidoscope.dggs.core.model.dggs.DggsJsonData;
 import ai.terraframe.kaleidoscope.dggs.core.model.dggs.Zones;
 
@@ -29,7 +29,7 @@ public class MockRemoteDggsService extends RemoteDggsService
 {
 
   @Override
-  public String html(Collection collection, Dggr dggr, String zoneId, Integer zoneDepth) throws IOException, InterruptedException
+  public String html(Collection collection, Dggrs dggr, String zoneId, Integer zoneDepth) throws IOException, InterruptedException
   {
     try (InputStream istream = this.getClass().getResourceAsStream("/response.html"))
     {
@@ -49,7 +49,7 @@ public class MockRemoteDggsService extends RemoteDggsService
   }
 
   @Override
-  public JsonArray geojson(Collection collection, Dggr dggr, String zoneId, Integer zoneDepth, Date datetime, String fiilter) throws IOException, InterruptedException
+  public JsonArray geojson(Collection collection, Dggrs dggr, String zoneId, Integer zoneDepth, Date datetime, String fiilter) throws IOException, InterruptedException
   {
     try (InputStream istream = this.getClass().getResourceAsStream("/data.geojson"))
     {
@@ -61,7 +61,7 @@ public class MockRemoteDggsService extends RemoteDggsService
   }
   
   @Override
-  public Zones zones(Collection collection, Dggr dggr, Integer zoneLevel, Envelope envelope, Date datetime) throws IOException, InterruptedException
+  public Zones zones(Collection collection, Dggrs dggr, Integer zoneLevel, Envelope envelope, Date datetime) throws IOException, InterruptedException
   {
     try (InputStream istream = this.getClass().getResourceAsStream("/zones.json"))
     {
@@ -75,7 +75,7 @@ public class MockRemoteDggsService extends RemoteDggsService
   }
 
   @Override
-  public DggsJsonData json(Collection collection, Dggr dggrs, String zoneId, Integer zoneDepth, Date datetime, String filter) throws IOException, InterruptedException
+  public DggsJsonData json(Collection collection, Dggrs dggrs, String zoneId, Integer zoneDepth, Date datetime, String filter) throws IOException, InterruptedException
   {
     try (InputStream istream = this.getClass().getResourceAsStream("/dggsjson.json"))
     {

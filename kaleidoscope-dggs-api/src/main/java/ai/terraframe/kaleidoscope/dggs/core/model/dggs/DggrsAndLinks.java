@@ -13,6 +13,6 @@ public class DggrsAndLinks
 {
   private List<Link> links;
 
-  private List<Dggr> dggrs;
+  private List<Dggrs> dggrs;
 
 }

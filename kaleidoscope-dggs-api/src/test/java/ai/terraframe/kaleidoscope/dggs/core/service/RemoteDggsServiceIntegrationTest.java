@@ -19,7 +19,7 @@ import com.google.gson.JsonArray;
 import ai.terraframe.kaleidoscope.dggs.core.config.TestConfiguration;
 import ai.terraframe.kaleidoscope.dggs.core.model.dggs.Collection;
 import ai.terraframe.kaleidoscope.dggs.core.model.dggs.CollectionsAndLinks;
-import ai.terraframe.kaleidoscope.dggs.core.model.dggs.Dggr;
+import ai.terraframe.kaleidoscope.dggs.core.model.dggs.Dggrs;
 import ai.terraframe.kaleidoscope.dggs.core.model.dggs.DggrsAndLinks;
 import ai.terraframe.kaleidoscope.dggs.core.model.dggs.DggsJsonData;
 import ai.terraframe.kaleidoscope.dggs.core.model.dggs.Extent;
@@ -38,7 +38,7 @@ public class RemoteDggsServiceIntegrationTest
   {
     // https://ogc-dggs-testing.fmecloud.com/api/dggs/collections/winnipeg-dem/dggs/ISEA3H/zones/G0-51FC9-A/data?f=html&zone-depth=3
     Collection collection = mockCollection();
-    Dggr dggr = mockDggr(collection);
+    Dggrs dggr = mockDggr(collection);
 
     JsonArray data = this.service.geojson(collection, dggr, "G0-51FC9-A", 3, null, null);
 
@@ -51,7 +51,7 @@ public class RemoteDggsServiceIntegrationTest
   {
     // https://ogc-dggs-testing.fmecloud.com/api/dggs/collections/winnipeg-dem/dggs/ISEA3H/zones/G0-51FC9-A/data?f=html&zone-depth=3
     Collection collection = mockCollection();
-    Dggr dggr = mockDggr(collection);
+    Dggrs dggr = mockDggr(collection);
 
     DggsJsonData json = this.service.json(collection, dggr, "G0-51FC9-A", 3, null, null);
 
@@ -63,7 +63,7 @@ public class RemoteDggsServiceIntegrationTest
   public void testZones() throws IOException, InterruptedException
   {
     Collection collection = mockCollection();
-    Dggr dggr = mockDggr(collection);
+    Dggrs dggr = mockDggr(collection);
     Envelope envelope = new Envelope(-97.34912125, -96.95599652, 49.71363749, 49.9938672);
 
     Zones response = this.service.zones(collection, dggr, 9, envelope, null);
@@ -103,9 +103,9 @@ public class RemoteDggsServiceIntegrationTest
 
   }
 
-  private Dggr mockDggr(Collection collection)
+  private Dggrs mockDggr(Collection collection)
   {
-    return new Dggr(collection.getId(), "ISEA3H", "", "", new LinkedList<>());
+    return new Dggrs(collection.getId(), "ISEA3H", "", "", new LinkedList<>());
   }
 
   private Collection mockCollection()
