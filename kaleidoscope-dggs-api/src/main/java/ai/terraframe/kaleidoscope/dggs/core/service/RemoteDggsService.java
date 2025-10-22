@@ -7,11 +7,13 @@ import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.collections4.map.LRUMap;
 import org.locationtech.jts.geom.Envelope;
 import org.locationtech.jts.geom.Geometry;
 import org.slf4j.Logger;
@@ -41,10 +43,20 @@ import ai.terraframe.kaleidoscope.dggs.core.serialization.IntervalDeserializer;
 @Service
 public class RemoteDggsService implements RemoteDggsServiceIF
 {
-  private static final Logger log = LoggerFactory.getLogger(RemoteDggsService.class);
+  private static final Logger       log = LoggerFactory.getLogger(RemoteDggsService.class);
 
   @Autowired
-  private AppProperties       properties;
+  private AppProperties             properties;
+
+  private Map<String, Zones>        zones;
+
+  private Map<String, DggsJsonData> dggsjson;
+
+  public RemoteDggsService()
+  {
+    this.zones = Collections.synchronizedMap(new LRUMap<String, Zones>(10));
+    this.dggsjson = Collections.synchronizedMap(new LRUMap<String, DggsJsonData>(10));
+  }
 
   @Override
   public Map<String, CollectionsAndLinks> collections() throws IOException, InterruptedException
@@ -173,7 +185,7 @@ public class RemoteDggsService implements RemoteDggsServiceIF
   @Override
   public Zones zones(Collection collection, Dggrs dggr, Integer zoneLevel, Envelope envelope, Date datetime) throws IOException, InterruptedException
   {
-    String url = collection.getUrl() + "/collections/" + collection.getId() + "/dggs/" + dggr.getId() + "/zones";
+    String baseUrl = collection.getUrl() + "/collections/" + collection.getId() + "/dggs/" + dggr.getId() + "/zones";
 
     String params = "f=json";
     params += "&bbox=" + envelope.getMinX();
@@ -189,13 +201,20 @@ public class RemoteDggsService implements RemoteDggsServiceIF
     }
 
     HttpRequest request = HttpRequest.newBuilder() //
-        .uri(URI.create(url + "?" + params)) //
+        .uri(URI.create(baseUrl + "?" + params)) //
         .header("Content-Type", "application/json") //
         .GET().build();
 
     HttpClient client = HttpClient.newHttpClient();
 
-    System.out.println("Remote request: [" + request.toString() + "]");
+    String url = request.toString();
+
+    if (this.zones.containsKey(url))
+    {
+      return this.zones.get(url);
+    }
+
+    System.out.println("Remote request: [" + url + "]");
 
     HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
@@ -205,12 +224,16 @@ public class RemoteDggsService implements RemoteDggsServiceIF
 
       ObjectMapper mapper = new ObjectMapper();
 
-      return mapper.readerFor(Zones.class).readValue(body);
+      Zones value = mapper.readerFor(Zones.class).readValue(body);
+
+      this.zones.put(url, value);
+
+      return value;
     }
 
     String body = response.body();
 
-    System.out.println("Error for request[" + request.toString() + "]");
+    System.out.println("Error for request[" + url + "]");
 
     // TODO: Handle error message
     throw new RuntimeException(body);
@@ -270,7 +293,7 @@ public class RemoteDggsService implements RemoteDggsServiceIF
   {
     // https://ogc-dggs-testing.fmecloud.com/api/collections/winnipeg-dem/dggs/ISEA3H/zones/G0-51FC9-A/data?f=html&zone-depth=7
 
-    String url = collection.getUrl() + "/collections/" + collection.getId() + "/dggs/" + dggrs.getId() + "/zones/" + zoneId + "/data";
+    String baseUrl = collection.getUrl() + "/collections/" + collection.getId() + "/dggs/" + dggrs.getId() + "/zones/" + zoneId + "/data";
 
     String params = "f=json";
     params = resolveDatetimeParameter(collection, datetime, params);
@@ -287,11 +310,18 @@ public class RemoteDggsService implements RemoteDggsServiceIF
     }
 
     HttpRequest request = HttpRequest.newBuilder() //
-        .uri(URI.create(url + "?" + params)) //
+        .uri(URI.create(baseUrl + "?" + params)) //
         .header("Content-Type", "application/json") //
         .GET().build();
-    
-    System.out.println("Remote request: [" + request.toString() + "]");
+
+    String url = request.toString();
+
+    if (this.dggsjson.containsKey(url))
+    {
+      return this.dggsjson.get(url);
+    }
+
+    System.out.println("Remote request: [" + url + "]");
 
     HttpClient client = HttpClient.newHttpClient();
 
@@ -303,7 +333,12 @@ public class RemoteDggsService implements RemoteDggsServiceIF
 
       ObjectMapper mapper = new ObjectMapper();
 
-      return mapper.readerFor(DggsJsonData.class).readValue(body);
+      DggsJsonData value = mapper.readerFor(DggsJsonData.class).readValue(body);
+
+      // Cache the response
+      this.dggsjson.put(url, value);
+
+      return value;
     }
 
     String body = response.body();
