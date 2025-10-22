@@ -30,6 +30,7 @@ import com.google.gson.JsonParser;
 import ai.terraframe.kaleidoscope.dggs.core.config.AppProperties;
 import ai.terraframe.kaleidoscope.dggs.core.model.GenericRestException;
 import ai.terraframe.kaleidoscope.dggs.core.model.Location;
+import ai.terraframe.kaleidoscope.dggs.core.model.RemoteDggsException;
 import ai.terraframe.kaleidoscope.dggs.core.model.dggs.Collection;
 import ai.terraframe.kaleidoscope.dggs.core.model.dggs.CollectionDggs;
 import ai.terraframe.kaleidoscope.dggs.core.model.dggs.CollectionQueryables;
@@ -76,6 +77,8 @@ public class RemoteDggsService implements RemoteDggsServiceIF
           .header("Content-Type", "application/json") //
           .GET().build();
 
+      log.trace("Remote request: [" + request.toString() + "]");
+
       HttpClient client = HttpClient.newHttpClient();
 
       HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
@@ -93,12 +96,7 @@ public class RemoteDggsService implements RemoteDggsServiceIF
       }
       else
       {
-        String body = response.body();
-
-        System.out.println("Error for request[" + request.toString() + "]");
-
-        // TODO: Handle error message
-        throw new RuntimeException(body);
+        this.throwErrorResponse(request, response);
       }
     }
 
@@ -117,7 +115,7 @@ public class RemoteDggsService implements RemoteDggsServiceIF
         .header("Content-Type", "application/json") //
         .GET().build();
 
-    System.out.println("Remote request: [" + request.toString() + "]");
+    log.trace("Remote request: [" + request.toString() + "]");
 
     HttpClient client = HttpClient.newHttpClient();
 
@@ -134,12 +132,9 @@ public class RemoteDggsService implements RemoteDggsServiceIF
       return value;
     }
 
-    String body = response.body();
+    this.throwErrorResponse(request, response);
 
-    System.out.println("Error for request[" + request.toString() + "]");
-
-    // TODO: Handle error message
-    throw new RuntimeException(body);
+    return null;
   }
 
   @Override
@@ -154,7 +149,7 @@ public class RemoteDggsService implements RemoteDggsServiceIF
         .header("Content-Type", "application/json") //
         .GET().build();
 
-    System.out.println("Remote request: [" + request.toString() + "]");
+    log.trace("Remote request: [" + request.toString() + "]");
 
     HttpClient client = HttpClient.newHttpClient();
 
@@ -170,12 +165,9 @@ public class RemoteDggsService implements RemoteDggsServiceIF
       return value;
     }
 
-    String body = response.body();
+    this.throwErrorResponse(request, response);
 
-    System.out.println("Error for request[" + request.toString() + "]");
-
-    // TODO: Handle error message
-    throw new RuntimeException(body);
+    return null;
   }
 
   @Override
@@ -190,7 +182,7 @@ public class RemoteDggsService implements RemoteDggsServiceIF
         .header("Content-Type", "application/json") //
         .GET().build();
 
-    System.out.println("Remote request: [" + request.toString() + "]");
+    log.trace("Remote request: [" + request.toString() + "]");
 
     HttpClient client = HttpClient.newHttpClient();
 
@@ -208,12 +200,9 @@ public class RemoteDggsService implements RemoteDggsServiceIF
       return Optional.empty();
     }
 
-    String body = response.body();
+    this.throwErrorResponse(request, response);
 
-    System.out.println("Error for request[" + request.toString() + "]");
-
-    // TODO: Handle error message
-    throw new RuntimeException(body);
+    return null;
   }
 
   @Override
@@ -257,7 +246,7 @@ public class RemoteDggsService implements RemoteDggsServiceIF
       return this.zones.get(url);
     }
 
-    System.out.println("Remote request: [" + url + "]");
+    log.trace("Remote request: [" + url + "]");
 
     HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
@@ -274,12 +263,9 @@ public class RemoteDggsService implements RemoteDggsServiceIF
       return value;
     }
 
-    String body = response.body();
+    this.throwErrorResponse(request, response);
 
-    System.out.println("Error for request[" + url + "]");
-
-    // TODO: Handle error message
-    throw new RuntimeException(body);
+    return null;
   }
 
   @Override
@@ -313,7 +299,7 @@ public class RemoteDggsService implements RemoteDggsServiceIF
 
     HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
-    System.out.println("Remote request: [" + request.toString() + "]");
+    log.trace("Remote request: [" + request.toString() + "]");
 
     if (response.statusCode() == 200)
     {
@@ -324,10 +310,9 @@ public class RemoteDggsService implements RemoteDggsServiceIF
       return object.get(propertyName).getAsJsonObject().get("features").getAsJsonArray();
     }
 
-    String body = response.body();
+    this.throwErrorResponse(request, response);
 
-    // TODO: Handle error message
-    throw new RuntimeException(body);
+    return null;
   }
 
   @Override
@@ -363,7 +348,7 @@ public class RemoteDggsService implements RemoteDggsServiceIF
       return this.dggsjson.get(url);
     }
 
-    System.out.println("Remote request: [" + url + "]");
+    log.trace("Remote request: [" + url + "]");
 
     HttpClient client = HttpClient.newHttpClient();
 
@@ -383,10 +368,9 @@ public class RemoteDggsService implements RemoteDggsServiceIF
       return value;
     }
 
-    String body = response.body();
+    this.throwErrorResponse(request, response);
 
-    // TODO: Handle error message
-    throw new RuntimeException(body);
+    return null;
   }
 
   @Override
@@ -411,12 +395,18 @@ public class RemoteDggsService implements RemoteDggsServiceIF
       return response.body();
     }
 
+    this.throwErrorResponse(request, response);
+
+    return null;
+  }
+
+  private void throwErrorResponse(HttpRequest request, HttpResponse<String> response)
+  {
     String body = response.body();
 
-    System.out.println("Error for request[" + request.toString() + "]");
+    log.error("Error for DGGS request[" + request.toString() + "]: " + response.statusCode());
 
-    // TODO: Handle error message
-    throw new RuntimeException(body);
+    throw new RemoteDggsException(body, response.statusCode());
   }
 
   private String resolveDatetimeParameter(Collection collection, Date datetime, String params) throws UnsupportedEncodingException

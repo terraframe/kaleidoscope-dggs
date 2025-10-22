@@ -161,7 +161,7 @@
       </testResource>
     </testResources>
     <directory>target</directory>
-    <finalName>ai-dggs-api</finalName>
+    <finalName>kaleidoscope-dggs-api</finalName>
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -208,7 +208,7 @@
               <resources>
                 <resource>
                   <directory>
-                    ${project.basedir}/../ai-dggs-ui/dist/ai-dggs/browser/</directory>
+                    ${project.basedir}/../kaleidoscope-dggs-ui/dist/kaleidoscope-dggs-ui/browser/</directory>
                   <filtering>false</filtering>
                 </resource>
               </resources>

@@ -85,7 +85,7 @@ public class CollectionMetadataService
       }
       catch (Exception e)
       {
-        throw new GenericRestException("Unable to get DGGRS information for colleciton [" + collectionId + "]", e);
+        throw new GenericRestException("Unable to get DGGRS information for collection [" + collectionId + "]", e);
       }
     });
   }
