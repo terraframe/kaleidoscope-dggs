@@ -18,6 +18,7 @@ import com.google.gson.JsonArray;
 
 import ai.terraframe.kaleidoscope.dggs.core.config.TestConfiguration;
 import ai.terraframe.kaleidoscope.dggs.core.model.dggs.Collection;
+import ai.terraframe.kaleidoscope.dggs.core.model.dggs.CollectionQueryables;
 import ai.terraframe.kaleidoscope.dggs.core.model.dggs.CollectionsAndLinks;
 import ai.terraframe.kaleidoscope.dggs.core.model.dggs.Dggrs;
 import ai.terraframe.kaleidoscope.dggs.core.model.dggs.DggrsAndLinks;
@@ -103,6 +104,20 @@ public class RemoteDggsServiceIntegrationTest
 
   }
 
+  @Test
+  public void testQueryables() throws IOException, InterruptedException
+  {
+    // https://ogc-dggs-testing.fmecloud.com/api/dggs/collections/winnipeg-dem/dggs/ISEA3H/zones/G0-51FC9-A/data?f=html&zone-depth=3
+    Collection collection = mockCollection();
+
+    CollectionQueryables queryables = this.service.queryables(collection.getUrl(), collection.getId()).get();
+
+    System.out.println(queryables);
+
+    Assert.assertEquals(4, queryables.getProperties().getProperties().size());
+
+  }
+
   private Dggrs mockDggr(Collection collection)
   {
     return new Dggrs(collection.getId(), "ISEA3H", "", "", new LinkedList<>());
@@ -110,7 +125,7 @@ public class RemoteDggsServiceIntegrationTest
 
   private Collection mockCollection()
   {
-    return new Collection("https://ogc-dggs-testing.fmecloud.com/api/dggs", "manitoba-tm", "Test", "Elevation of winnipeg", 0.01D, new Extent(), new LinkedList<>());
+    return new Collection("https://ogc-dggs-testing.fmecloud.com/api/dggs", "flood-level", "Test", "Elevation of winnipeg", 0.01D, new Extent(), new LinkedList<>());
   }
 
 }

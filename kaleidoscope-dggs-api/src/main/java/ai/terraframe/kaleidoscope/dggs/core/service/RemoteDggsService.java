@@ -12,6 +12,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import org.apache.commons.collections4.map.LRUMap;
 import org.locationtech.jts.geom.Envelope;
@@ -31,6 +32,7 @@ import ai.terraframe.kaleidoscope.dggs.core.model.GenericRestException;
 import ai.terraframe.kaleidoscope.dggs.core.model.Location;
 import ai.terraframe.kaleidoscope.dggs.core.model.dggs.Collection;
 import ai.terraframe.kaleidoscope.dggs.core.model.dggs.CollectionDggs;
+import ai.terraframe.kaleidoscope.dggs.core.model.dggs.CollectionQueryables;
 import ai.terraframe.kaleidoscope.dggs.core.model.dggs.CollectionsAndLinks;
 import ai.terraframe.kaleidoscope.dggs.core.model.dggs.Dggrs;
 import ai.terraframe.kaleidoscope.dggs.core.model.dggs.DggrsAndLinks;
@@ -163,6 +165,42 @@ public class RemoteDggsService implements RemoteDggsServiceIF
       CollectionDggs value = mapper.readerFor(CollectionDggs.class).readValue(body);
 
       return value;
+    }
+
+    String body = response.body();
+
+    System.out.println("Error for request[" + request.toString() + "]");
+
+    // TODO: Handle error message
+    throw new RuntimeException(body);
+  }
+
+  @Override
+  public Optional<CollectionQueryables> queryables(String baseUrl, String collectionId) throws IOException, InterruptedException
+  {
+    String url = baseUrl + "/collections/" + collectionId + "/queryables";
+
+    String params = "f=json";
+
+    HttpRequest request = HttpRequest.newBuilder() //
+        .uri(URI.create(url + "?" + params)) //
+        .header("Content-Type", "application/json") //
+        .GET().build();
+
+    HttpClient client = HttpClient.newHttpClient();
+
+    HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+    if (response.statusCode() == 200)
+    {
+      String body = response.body();
+
+      ObjectMapper mapper = new ObjectMapper();
+      return Optional.of(mapper.readerFor(CollectionQueryables.class).readValue(body));
+    }
+    else if (response.statusCode() == 204)
+    {
+      return Optional.empty();
     }
 
     String body = response.body();

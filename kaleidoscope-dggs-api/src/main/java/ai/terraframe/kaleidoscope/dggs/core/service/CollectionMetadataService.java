@@ -5,6 +5,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -16,6 +17,7 @@ import ai.terraframe.kaleidoscope.dggs.core.model.dggs.Collection;
 import ai.terraframe.kaleidoscope.dggs.core.model.dggs.CollectionDggs;
 import ai.terraframe.kaleidoscope.dggs.core.model.dggs.Dggrs;
 import ai.terraframe.kaleidoscope.dggs.core.model.dggs.DggrsAndLinks;
+import ai.terraframe.kaleidoscope.dggs.core.model.dggs.QueryableProperties;
 
 @Service
 public class CollectionMetadataService
@@ -56,16 +58,21 @@ public class CollectionMetadataService
         return dggrs.map(dggr -> {
           try
           {
+            List<CollectionAttribute> attributes = new LinkedList<>();
 
             CollectionDggs dggses = this.service.dggs(collection.getUrl(), collectionId, dggr.getId());
 
-            // TODO: Hit the actual queryable endpoint of the dggs server
-            List<CollectionAttribute> attributes = new LinkedList<>();
-
-            if (collectionId.equals("flood-level"))
-            {
-              attributes.add(new CollectionAttribute("waterlevel", "The level of standing water in meters"));
-            }
+            this.service.queryables(collection.getUrl(), collectionId).ifPresent(queryables -> {
+              QueryableProperties properties = queryables.getProperties();
+              properties.getProperties() //
+                  .entrySet() //
+                  .stream() //
+                  .filter(entry -> !StringUtils.isBlank(entry.getValue().getType())) //
+                  .filter(entry -> !entry.getValue().getType().equals("date")) //
+                  .forEach(entry -> {
+                    attributes.add(new CollectionAttribute(entry.getKey(), entry.getValue().getDescription()));
+                  });
+            });
 
             return new CollectionMetadata(collectionId, attributes, dggs, dggses, dggr);
           }
