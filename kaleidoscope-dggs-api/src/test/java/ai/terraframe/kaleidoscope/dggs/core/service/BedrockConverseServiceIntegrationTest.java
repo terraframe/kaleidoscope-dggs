@@ -108,7 +108,7 @@ public class BedrockConverseServiceIntegrationTest
     String toolUseId = "tooluse_vLS7L15WRsSbSK2Pd27KVg";
 
     List<ClientMessage> messages = Arrays.asList( //
-        new ClientMessage("Give me the elevation data of Winnipeg where the height is greater than 10.5"), //
+        new ClientMessage("Give me the flood data of Winnipeg where the water level is greater than 10.5"), //
         new ClientMessage(SenderRole.SYSTEM, MessageType.NAME_RESOLUTION, "There are multiple locations").put("toolUseId", toolUseId).put("locationName", "Winnipeg"), //
         new ClientMessage(SenderRole.USER, MessageType.LOCATION_RESOLVED, "44101234").put("toolUseId", toolUseId).put("uri", uri) //
     );
@@ -125,7 +125,7 @@ public class BedrockConverseServiceIntegrationTest
     Assert.assertEquals(uri, toolUse.getParameters().get("uri").asString());
     Assert.assertEquals("winnipeg-dem", toolUse.getParameters().get("category").asString());
     Assert.assertTrue(toolUse.getParameters().containsKey("filter"));
-    Assert.assertEquals("elevation > 10.5", toolUse.getParameters().get("filter").asString());
+    Assert.assertEquals("waterlevel > 10.5", toolUse.getParameters().get("filter").asString());
   }
   
   @Test

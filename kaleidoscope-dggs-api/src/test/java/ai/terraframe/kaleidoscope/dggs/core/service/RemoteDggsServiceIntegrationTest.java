@@ -3,6 +3,7 @@ package ai.terraframe.kaleidoscope.dggs.core.service;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.LinkedList;
+import java.util.Map;
 
 import org.junit.Assert;
 import org.junit.jupiter.api.Test;
@@ -18,6 +19,7 @@ import com.google.gson.JsonArray;
 
 import ai.terraframe.kaleidoscope.dggs.core.config.TestConfiguration;
 import ai.terraframe.kaleidoscope.dggs.core.model.dggs.Collection;
+import ai.terraframe.kaleidoscope.dggs.core.model.dggs.CollectionDggs;
 import ai.terraframe.kaleidoscope.dggs.core.model.dggs.CollectionQueryables;
 import ai.terraframe.kaleidoscope.dggs.core.model.dggs.CollectionsAndLinks;
 import ai.terraframe.kaleidoscope.dggs.core.model.dggs.Dggrs;
@@ -43,7 +45,7 @@ public class RemoteDggsServiceIntegrationTest
 
     JsonArray data = this.service.geojson(collection, dggr, "G0-51FC9-A", 3, null, null);
 
-    Assert.assertEquals(37, data.size());
+    Assert.assertEquals(27, data.size());
 
   }
 
@@ -69,10 +71,16 @@ public class RemoteDggsServiceIntegrationTest
 
     Zones response = this.service.zones(collection, dggr, 9, envelope, null);
 
-    System.out.println(response);
+    Assert.assertEquals(3, response.getZones().size());
 
-    // Assert.assertEquals(37, data.size());
+  }
 
+  @Test
+  public void testCollections() throws IOException, InterruptedException
+  {
+    Map<String, CollectionsAndLinks> collections = this.service.collections();
+
+    Assert.assertEquals(1, collections.size());
   }
 
   @Test
@@ -98,24 +106,29 @@ public class RemoteDggsServiceIntegrationTest
 
     DggrsAndLinks dggs = this.service.dggs(collection.getUrl(), collection.getId());
 
-    System.out.println(dggs);
+    Assert.assertEquals(8, dggs.getDggrs().size());
 
-    Assert.assertEquals(37, dggs.getDggrs().size());
+  }
+
+  @Test
+  public void testCollectionDggs() throws IOException, InterruptedException
+  {
+    Collection collection = mockCollection();
+
+    CollectionDggs dggs = this.service.dggs(collection.getUrl(), collection.getId(), "ISEA3H");
+
+    Assert.assertEquals(Integer.valueOf(13), dggs.getMaxRefinementLevel());
 
   }
 
   @Test
   public void testQueryables() throws IOException, InterruptedException
   {
-    // https://ogc-dggs-testing.fmecloud.com/api/dggs/collections/winnipeg-dem/dggs/ISEA3H/zones/G0-51FC9-A/data?f=html&zone-depth=3
-    Collection collection = mockCollection();
+    Collection collection = new Collection("https://ogc-dggs-testing.fmecloud.com/api/dggs", "flood-level", "Test", "Elevation of winnipeg", 0.01D, new Extent(), new LinkedList<>());
 
     CollectionQueryables queryables = this.service.queryables(collection.getUrl(), collection.getId()).get();
 
-    System.out.println(queryables);
-
     Assert.assertEquals(4, queryables.getProperties().getProperties().size());
-
   }
 
   private Dggrs mockDggr(Collection collection)
@@ -125,7 +138,8 @@ public class RemoteDggsServiceIntegrationTest
 
   private Collection mockCollection()
   {
-    return new Collection("https://ogc-dggs-testing.fmecloud.com/api/dggs", "flood-level", "Test", "Elevation of winnipeg", 0.01D, new Extent(), new LinkedList<>());
+    return new Collection("https://ogc-dggs-testing.fmecloud.com/api/dggs", "manitoba-tm", "Test", "Elevation of winnipeg", 0.01D, new Extent(), new LinkedList<>());
+
   }
 
 }

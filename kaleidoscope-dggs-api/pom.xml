@@ -7,7 +7,7 @@
     <artifactId>kaleidoscope-dggs</artifactId>
     <version>0.0.1-SNAPSHOT</version>
   </parent>
-  
+
   <artifactId>kaleidoscope-dggs-api</artifactId>
   <packaging>war</packaging>
   <name>Kaleidoscope AI DGGS API server</name>
@@ -21,18 +21,18 @@
     <geotools.version>32.2</geotools.version>
   </properties>
   <dependencies>
-	  <dependency>
-		  <groupId>software.amazon.awssdk</groupId>
-		  <artifactId>netty-nio-client</artifactId>
-		  <version>2.29.6</version>
-		  <exclusions>
-		    <exclusion>
-		      <groupId>org.slf4j</groupId>
-		      <artifactId>slf4j-api</artifactId>
-		    </exclusion>
-		  </exclusions>
-		</dependency>
-	  
+    <dependency>
+      <groupId>software.amazon.awssdk</groupId>
+      <artifactId>netty-nio-client</artifactId>
+      <version>2.29.6</version>
+      <exclusions>
+        <exclusion>
+          <groupId>org.slf4j</groupId>
+          <artifactId>slf4j-api</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
     <!--  Spring!  -->
     <dependency>
       <groupId>org.springframework.boot</groupId>
@@ -92,17 +92,17 @@
     <dependency>
       <groupId>org.projectlombok</groupId>
       <artifactId>lombok</artifactId>
-      <version>1.18.36</version>
+      <version>1.18.42</version>
       <scope>provided</scope>
     </dependency>
     <!-- DGGAL -->
     <dependency>
       <groupId>org.dggal</groupId>
       <artifactId>dggal</artifactId>
-      <version>1.0.0</version>    
-    </dependency>    
-<!-- https://mvnrepository.com/artifact/org.wololo/jts2geojson -->
-<!--
+      <version>1.0.0</version>
+    </dependency>
+    <!-- https://mvnrepository.com/artifact/org.wololo/jts2geojson -->
+    <!--
   
 <dependency>
     <groupId>org.wololo</groupId>
@@ -144,67 +144,6 @@
         </plugins>
       </build>
     </profile>
-    <profile>
-      <id>cargo-run</id>
-      <activation>
-        <property>
-          <name>cargo-run</name>
-        </property>
-      </activation>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.codehaus.cargo</groupId>
-            <artifactId>cargo-maven2-plugin</artifactId>
-            <version>1.9.0</version>
-            <configuration>
-              <container>
-                <containerId>tomcat11x</containerId>
-                <artifactInstaller>
-                  <groupId>org.apache.tomcat</groupId>
-                  <artifactId>tomcat</artifactId>
-                  <version>11.0.5</version>
-                </artifactInstaller>
-                <timeout>4800000</timeout>
-              </container>
-              <configuration>
-                <properties>
-                  <cargo.servlet.port>8080</cargo.servlet.port>
-                  <cargo.protocol>http</cargo.protocol>
-                  <cargo.tomcat.httpSecure>false</cargo.tomcat.httpSecure>
-                  <cargo.tomcat.uriencoding>UTF-8</cargo.tomcat.uriencoding>
-                  <cargo.jvmargs>
-                    -Xmx5120M
-                    -Xdebug
-                    -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=8000
-                    -Dtomcat.home=/${project.basedir}/target/cargo/configurations/tomcat11x
-                  </cargo.jvmargs>
-                </properties>
-              </configuration>
-              <deployables>
-                <deployable>
-                  <groupId>ai.terraframe</groupId>
-                  <artifactId>ai-dggs-api</artifactId>
-                  <type>war</type>
-                  <properties>
-                    <context>/</context>
-                  </properties>
-                </deployable>
-              </deployables>
-            </configuration>
-            <executions>
-              <execution>
-                <id>cargo-run</id>
-                <phase>verify</phase>
-                <goals>
-                  <goal>run</goal>
-                </goals>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
   </profiles>
 
   <build>
@@ -225,6 +164,19 @@
     <finalName>ai-dggs-api</finalName>
     <plugins>
       <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <annotationProcessorPaths>
+            <path>
+              <groupId>org.projectlombok</groupId>
+              <artifactId>lombok</artifactId>
+              <version>1.18.42</version>
+            </path>
+          </annotationProcessorPaths>
+        </configuration>
+      </plugin>
+      <plugin>
         <artifactId>maven-surefire-plugin</artifactId>
         <version>3.5.2</version>
         <configuration>
@@ -239,7 +191,7 @@
         <configuration>
           <parameters>true</parameters>
         </configuration>
-      </plugin>      
+      </plugin>
       <!--  Copy over the compiled react code    -->
       <plugin>
         <artifactId>maven-resources-plugin</artifactId>

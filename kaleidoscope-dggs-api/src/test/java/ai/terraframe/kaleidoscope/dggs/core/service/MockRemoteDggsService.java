@@ -7,7 +7,9 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 import org.locationtech.jts.geom.Envelope;
 import org.springframework.context.annotation.Primary;
@@ -15,11 +17,16 @@ import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
+import ai.terraframe.kaleidoscope.dggs.core.model.GenericRestException;
 import ai.terraframe.kaleidoscope.dggs.core.model.dggs.Collection;
+import ai.terraframe.kaleidoscope.dggs.core.model.dggs.CollectionDggs;
+import ai.terraframe.kaleidoscope.dggs.core.model.dggs.CollectionQueryables;
 import ai.terraframe.kaleidoscope.dggs.core.model.dggs.CollectionsAndLinks;
 import ai.terraframe.kaleidoscope.dggs.core.model.dggs.Dggrs;
+import ai.terraframe.kaleidoscope.dggs.core.model.dggs.DggrsAndLinks;
 import ai.terraframe.kaleidoscope.dggs.core.model.dggs.DggsJsonData;
 import ai.terraframe.kaleidoscope.dggs.core.model.dggs.Zones;
 
@@ -55,11 +62,15 @@ public class MockRemoteDggsService extends RemoteDggsService
     {
       try (Reader reader = new BufferedReader(new InputStreamReader(istream, StandardCharsets.UTF_8)))
       {
-        return JsonParser.parseReader(reader).getAsJsonArray();
+        JsonObject object = JsonParser.parseReader(reader).getAsJsonObject();
+
+        String propertyName = object.keySet().stream().findFirst().orElseThrow(() -> new GenericRestException("Collection data does not contain any properties"));
+
+        return object.get(propertyName).getAsJsonObject().get("features").getAsJsonArray();
       }
     }
   }
-  
+
   @Override
   public Zones zones(Collection collection, Dggrs dggr, Integer zoneLevel, Envelope envelope, Date datetime) throws IOException, InterruptedException
   {
@@ -88,7 +99,7 @@ public class MockRemoteDggsService extends RemoteDggsService
     }
 
   }
-  
+
   @Override
   public Map<String, CollectionsAndLinks> collections() throws IOException, InterruptedException
   {
@@ -98,7 +109,52 @@ public class MockRemoteDggsService extends RemoteDggsService
       {
         ObjectMapper mapper = new ObjectMapper();
 
-        return mapper.readerForMapOf(CollectionsAndLinks.class).readValue(reader);
+        CollectionsAndLinks value = mapper.readerFor(CollectionsAndLinks.class).readValue(reader);
+        value.getCollections().forEach(collection -> collection.setUrl("http://127.0.0.1/test"));
+
+        return Map.of("http://127.0.0.1/test", value);
+      }
+    }
+  }
+
+  @Override
+  public DggrsAndLinks dggs(String baseUrl, String collectionId) throws IOException, InterruptedException
+  {
+    try (InputStream istream = this.getClass().getResourceAsStream("/dggs.json"))
+    {
+      try (Reader reader = new BufferedReader(new InputStreamReader(istream, StandardCharsets.UTF_8)))
+      {
+        ObjectMapper mapper = new ObjectMapper();
+
+        return mapper.readerFor(DggrsAndLinks.class).readValue(reader);
+      }
+    }
+  }
+
+  @Override
+  public CollectionDggs dggs(String baseUrl, String collectionId, String dggrsId) throws IOException, InterruptedException
+  {
+    try (InputStream istream = this.getClass().getResourceAsStream("/collection-dggs.json"))
+    {
+      try (Reader reader = new BufferedReader(new InputStreamReader(istream, StandardCharsets.UTF_8)))
+      {
+        ObjectMapper mapper = new ObjectMapper();
+
+        return mapper.readerFor(CollectionDggs.class).readValue(reader);
+      }
+    }
+  }
+
+  @Override
+  public Optional<CollectionQueryables> queryables(String baseUrl, String collectionId) throws IOException, InterruptedException
+  {
+    try (InputStream istream = this.getClass().getResourceAsStream("/queryables.json"))
+    {
+      try (Reader reader = new BufferedReader(new InputStreamReader(istream, StandardCharsets.UTF_8)))
+      {
+        ObjectMapper mapper = new ObjectMapper();
+
+        return Optional.of(mapper.readerFor(CollectionQueryables.class).readValue(reader));
       }
     }
   }

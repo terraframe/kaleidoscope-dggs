@@ -67,7 +67,6 @@ public class RemoteDggsService implements RemoteDggsServiceIF
 
     for (String baseUrl : this.properties.getDggsUrls())
     {
-
       String url = baseUrl + "/collections";
 
       String params = "f=json";
@@ -118,6 +117,8 @@ public class RemoteDggsService implements RemoteDggsServiceIF
         .header("Content-Type", "application/json") //
         .GET().build();
 
+    System.out.println("Remote request: [" + request.toString() + "]");
+
     HttpClient client = HttpClient.newHttpClient();
 
     HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
@@ -153,6 +154,8 @@ public class RemoteDggsService implements RemoteDggsServiceIF
         .header("Content-Type", "application/json") //
         .GET().build();
 
+    System.out.println("Remote request: [" + request.toString() + "]");
+
     HttpClient client = HttpClient.newHttpClient();
 
     HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
@@ -186,6 +189,8 @@ public class RemoteDggsService implements RemoteDggsServiceIF
         .uri(URI.create(url + "?" + params)) //
         .header("Content-Type", "application/json") //
         .GET().build();
+
+    System.out.println("Remote request: [" + request.toString() + "]");
 
     HttpClient client = HttpClient.newHttpClient();
 
@@ -314,7 +319,6 @@ public class RemoteDggsService implements RemoteDggsServiceIF
     {
       JsonObject object = JsonParser.parseString(response.body()).getAsJsonObject();
 
-      // TODO : determine what property to use
       String propertyName = object.keySet().stream().findFirst().orElseThrow(() -> new GenericRestException("Collection data does not contain any properties"));
 
       return object.get(propertyName).getAsJsonObject().get("features").getAsJsonArray();

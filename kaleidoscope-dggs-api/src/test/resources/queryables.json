@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "Red River estimated flood depth time series grids derived from flood model of spring 2011 flood, used in OGC  Disaster pilot 2021.",
+  "additionalProperties": false,
+  "title": "Red River Flood levels Mar - May 2011",
+  "type": "object",
+  "properties": {
+    "date": {
+      "description": "The date and time of the water level reading",
+      "title": "Date",
+      "type": "string"
+    },
+    "waterlevel": {
+      "description": "Water Level (m)",
+      "title": "Water Level",
+      "type": "number"
+    },
+    "watercourse": {
+      "description": "Whether the location is normally part of a river, stream or lake",
+      "title": "Watercourse",
+      "type": "boolean"
+    },
+    "geometry": {
+      "x-ogc-role": "primary-geometry",
+      "format": "geometry-point",
+      "description": "Sample Location",
+      "title": "Point"
+    }
+  },
+  "$id": "https://ogc-dggs-testing.fmecloud.com/api/dggs/collections/flood-level/queryables"
+}

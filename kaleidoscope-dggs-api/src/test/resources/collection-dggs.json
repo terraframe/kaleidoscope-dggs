@@ -1,0 +1,41 @@
+{
+    "linkTemplates": [
+        {
+            "uriTemplate": "/api/dggs/collections/manitoba-tm/dggs/ISEA3H/zones/{zoneId}",
+            "rel": "[ogc-rel:dggrs-zone-info]",
+            "title": "DGGRS zone information for a particular ISEA3H zone"
+        },
+        {
+            "uriTemplate": "/api/dggs/collections/manitoba-tm/dggs/ISEA3H/zones/{zoneId}/data",
+            "rel": "[ogc-rel:dggrs-zone-data]",
+            "title": "Data retrieval for a particular ISEA3H zone"
+        }
+    ],
+    "defaultDepth": 5,
+    "description": "A Discrete Global Grid Reference System based on the Icosahedral Snyder Equal Area projection, with aperture 3 hexagonal zones.",
+    "links": [
+        {
+            "rel": "self",
+            "href": "/api/dggs/collections/manitoba-tm/dggs/ISEA3H",
+            "title": "ISEA3H DGGRS for Manitoba Temperature Projection"
+        },
+        {
+            "rel": "[ogc-rel:dggrs-definition]",
+            "href": "/api/dggs/dggrs/ISEA3H",
+            "title": "ISEA3H DGGRS definition"
+        },
+        {
+            "rel": "[ogc-rel:dggrs-zone-query]",
+            "href": "/api/dggs/collections/manitoba-tm/dggs/ISEA3H/zones",
+            "title": "ISEA3H DGGRS Zone Query"
+        },
+        {
+            "rel": "[ogc-rel:geodata]",
+            "href": "/api/dggs/collections/manitoba-tm"
+        }
+    ],
+    "id": "ISEA3H",
+    "title": "ISEA Aperture 3 Hexagonal",
+    "uri": "http://www.opengis.net/def/dggrs/OGC/1.0/ISEA3H",
+    "maxRefinementLevel": 13
+}
