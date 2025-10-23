@@ -46,8 +46,8 @@ public class ConfigurationController
   public ResponseEntity<Configuration> getConfiguration(CsrfToken token) throws IOException, ParseException
   {
     Configuration configuration = new Configuration();
-//    configuration.setStyles(this.service.getStyles());
-//    configuration.setLayers(this.service.getVectorLayers());
+    configuration.setStyles(this.service.getStyles());
+    configuration.setLayers(this.service.getVectorLayers());
 
     if (token != null)
     {

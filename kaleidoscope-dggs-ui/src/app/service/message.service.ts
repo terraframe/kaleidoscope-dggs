@@ -17,8 +17,6 @@ export class MessageService {
     process(system: ChatMessage, message: Message): void {
 
         if (message.type === 'BASIC') {
-            console.log(message.content);
-
             this.store.dispatch(ChatActions.updateMessage({
                 ...system,
                 text: message.content!,

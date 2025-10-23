@@ -19,7 +19,7 @@ import { AttributePanelComponent } from '../attribute-panel/attribute-panel.comp
 import { AichatComponent } from '../aichat/aichat.component';
 import { ResultsTableComponent } from '../results-table/results-table.component';
 import { ConfigurationService } from '../service/configuration-service.service';
-import { defaultQueries, SELECTED_COLOR, HOVER_COLOR, GREEN, RED } from './defaultQueries';
+import { SELECTED_COLOR, HOVER_COLOR, GREEN, RED } from './defaultQueries';
 import { AllGeoJSON, bbox, bboxPolygon, center, union } from '@turf/turf';
 import { ErrorService } from '../service/error-service.service';
 import { ExplorerActions, getNeighbors, getObjects, getStyles, getVectorLayers, getZoomMap, highlightedObject, selectedObject, getWorkflowStep, WorkflowStep, getPage, getZones, getWorkflowData, getDggsJson } from '../state/explorer.state';
@@ -105,8 +105,6 @@ export class ExplorerComponent implements OnInit, OnDestroy, AfterViewInit {
     // file?: string;
 
     importError?: string;
-
-    public defaultQueries = defaultQueries;
 
     public loading: boolean = false;
 

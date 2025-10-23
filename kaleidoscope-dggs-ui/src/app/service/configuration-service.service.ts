@@ -29,14 +29,16 @@ export class ConfigurationService {
     // }
     // else
     // {
-      // Uncomment below to make a real HTTP request
-      return firstValueFrom(this.http.get<Configuration>(environment.apiUrl + 'api/configuration/get')).then(configuration => {
-        configuration.layers.map(l => l.id = uuidv4())
+    // Uncomment below to make a real HTTP request
+    return firstValueFrom(this.http.get<Configuration>(environment.apiUrl + 'api/configuration/get')).then(configuration => {
+      localStorage.setItem('token', configuration.token);
 
-        localStorage.setItem('token', configuration.token);
-        
-        return configuration;
-      });
+      if (configuration.layers != null) {
+        configuration.layers.map(l => l.id = uuidv4())
+      }
+
+      return configuration;
+    });
     // }
   }
 

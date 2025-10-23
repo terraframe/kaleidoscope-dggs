@@ -98,8 +98,6 @@ export class AichatComponent {
 
     this.loading = true;
 
-    console.log(this.renderedMessages);
-
     this.chatService.query([...this.renderedMessages].reverse())
       .then((message) => this.messageService.process(system, message))
       .catch(error => {
