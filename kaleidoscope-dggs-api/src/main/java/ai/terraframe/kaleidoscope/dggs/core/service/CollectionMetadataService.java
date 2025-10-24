@@ -69,6 +69,7 @@ public class CollectionMetadataService
                   .stream() //
                   .filter(entry -> !StringUtils.isBlank(entry.getValue().getType())) //
                   .filter(entry -> !entry.getValue().getType().equals("date")) //
+                  .filter(entry -> !entry.getKey().equals("date")) //
                   .forEach(entry -> {
                     attributes.add(new CollectionAttribute(entry.getKey(), entry.getValue().getDescription()));
                   });
