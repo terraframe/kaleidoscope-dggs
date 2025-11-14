@@ -39,7 +39,7 @@ export interface ZoneCollection {
 
 export interface DggsJson {
   dggrs: string
-  values: Value[]
+  values: Value
   depths: string[]
   zoneId: string
 }

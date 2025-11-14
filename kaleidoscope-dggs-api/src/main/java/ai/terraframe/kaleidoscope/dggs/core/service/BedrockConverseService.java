@@ -94,7 +94,7 @@ public class BedrockConverseService
     properties.put("date", Document.mapBuilder() //
         .putString("type", "string") //
         .putString("format", "date-time") //
-        .putString("description", "Optional date in ISO 8601 format (e.g., 2025-09-30T00:00:00Z") //
+        .putString("description", "Optional date supplied in the user question in ISO 8601 format (e.g., 2025-09-30T00:00:00Z") //
         .build());
     properties.put("filter", Document.mapBuilder() //
         .putString("type", "string") //
@@ -155,7 +155,7 @@ public class BedrockConverseService
     properties.put("date", Document.mapBuilder() //
         .putString("type", "string") //
         .putString("format", "date-time") //
-        .putString("description", "Optional date in ISO 8601 format (e.g., 2025-09-30T00:00:00Z)") //
+        .putString("description", "Optional date supplied in the user question in ISO 8601 format (e.g., 2025-09-30T00:00:00Z") //
         .build());
     properties.put("filter", Document.mapBuilder() //
         .putString("type", "string") //
@@ -191,7 +191,7 @@ public class BedrockConverseService
     properties.put("date", Document.mapBuilder() //
         .putString("type", "string") //
         .putString("format", "date-time") //
-        .putString("description", "Optional date in ISO 8601 format (e.g., 2025-09-30T00:00:00Z)") //
+        .putString("description", "Optional date supplied in the user question in ISO 8601 format (e.g., 2025-09-30T00:00:00Z") //
         .build());
     properties.put("filter", Document.mapBuilder() //
         .putString("type", "string") //
@@ -240,11 +240,11 @@ public class BedrockConverseService
 
           if (attributes.size() > 0)
           {
-            builder.append(" -- The collection supports the following attributes for filtering: \n" + StringUtils.join(attributes.stream().map(a -> a.getName() + " - " + a.getDescription()).toList(), ","));
+            builder.append(" -- The collection supports the following attributes for filtering: \n" + StringUtils.join(attributes.stream().map(a -> " **** " + a.getName() + " - " + a.getDescription() + " - With attribute type " + a.getType()).toList(), "\n"));
           }
         });
 
-        systemPrompt.append(builder + "\n");
+        systemPrompt.append(builder + "\n\n");
       });
 
       systemPrompt.append("""
@@ -305,8 +305,6 @@ public class BedrockConverseService
           .toolConfig(config -> config.tools(getNameResolutionToolSpec(), getLocationDataToolSpec(), getPowerIntrastructureToolSpec(), getDissemenationAreaToolSpec())) //
           .messages(bedrockMessages) //
           .inferenceConfig(config -> config //
-              .maxTokens(512) //
-              .temperature(0.5F) //
               .topP(0.9F)));
 
       // Prepare a future object to handle the asynchronous response.

@@ -69,7 +69,7 @@ export class ExplorerComponent implements OnInit, OnDestroy, AfterViewInit {
 
     private store = inject(Store);
 
-    dggsjson$: Observable<DggsJson[]> = this.store.select(getDggsJson);
+    dggsjson$: Observable<DggsJson[] | null> = this.store.select(getDggsJson);
 
     zones$: Observable<Feature[]> = this.store.select(getZones);
 
@@ -231,31 +231,44 @@ export class ExplorerComponent implements OnInit, OnDestroy, AfterViewInit {
             .subscribe(dggsjsons => {
 
                 if (this.initialized) {
-                    const features = dggsjsons.flatMap(dggsjson => this.dggsjsonToFeatures(dggsjson));
+                    if (dggsjsons != null) {
 
-                    const geojson: any = {
-                        type: "FeatureCollection",
-                        features: features
+                        const features = dggsjsons.flatMap(dggsjson => this.dggsjsonToFeatures(dggsjson));
+
+                        console.log('Total Feature count', features.length);
+
+                        const geojson: any = {
+                            type: "FeatureCollection",
+                            features: features
+                        }
+
+                        const arr = features.map(feature => feature.properties.value);
+                        let minVal = Math.min(...arr);
+                        let maxVal = Math.max(...arr);
+
+                        this.map!.setPaintProperty(
+                            'data-shape',
+                            'fill-color',
+                            [
+                                'interpolate',
+                                ['linear'],
+                                ['get', 'value'],
+                                minVal, GREEN,
+                                maxVal, RED
+                            ],
+                        );
+
+                        const source = this.map!.getSource('data') as GeoJSONSource;
+                        source.setData(geojson);
                     }
+                    else {
+                        const source = this.map!.getSource('data') as GeoJSONSource;
 
-                    const arr = features.map(feature => feature.properties.value);
-                    let minVal = Math.min(...arr);
-                    let maxVal = Math.max(...arr);
-
-                    this.map!.setPaintProperty(
-                        'data-shape',
-                        'fill-color',
-                        [
-                            'interpolate',
-                            ['linear'],
-                            ['get', 'value'],
-                            minVal, GREEN,
-                            maxVal, RED
-                        ],
-                    );
-
-                    const source = this.map!.getSource('data') as GeoJSONSource;
-                    source.setData(geojson);
+                        source.setData({
+                            type: "FeatureCollection",
+                            features: []
+                        });
+                    }
                 }
             })
 
@@ -1162,7 +1175,7 @@ export class ExplorerComponent implements OnInit, OnDestroy, AfterViewInit {
         this.store.dispatch(ExplorerActions.setVectorLayer({ layer: newLayer }));
     }
 
-    dggsjsonToFeatures(dggsjson: DggsJson): any {
+    dggsjsonToFeatures(dggsjson: DggsJson): any[] {
         const features = [];
 
         const dggrs = this.dggal!.createDGGRS(dggsjson.dggrs);
@@ -1184,16 +1197,20 @@ export class ExplorerComponent implements OnInit, OnDestroy, AfterViewInit {
             // console.log('Index', dggrs.getSubZoneIndex(parent, first));
             // console.log('At Index', dggrs.getSubZoneAtIndex(parent, 5, BigInt("0")));
 
+            console.log('Parent: ', parent);
 
-            if (dggsjson.values.length > 0 && dggsjson.depths.length > 0) {
-                const propertyMap = dggsjson.values[0].properties;
-                const keys = Object.keys(propertyMap);
+            if (parent != null && dggsjson.depths.length > 0) {
+                const propertyMap = dggsjson.values.properties;
+                const keys = Object.keys(propertyMap).filter(k => k != 'zone_id');
                 const relativeDepth = parseInt(dggsjson.depths[0]);
+
+                console.log('Keys: ' + keys)
+
 
                 if (keys.length > 0) {
                     const propertyData = propertyMap[keys[0]];
                     const data = propertyData[0].data;
-                    const zones = dggrs.getSubZones(parent, relativeDepth);
+                    // const zones = dggrs.getSubZones(parent, relativeDepth);
 
                     // if (data.length !== zones.length) {
                     //     console.log('Subzone count mismatch for zone [' + dggsjson.zoneId + ']: ' + data.length + ", " + zones.length)
@@ -1213,7 +1230,10 @@ export class ExplorerComponent implements OnInit, OnDestroy, AfterViewInit {
 
                             if (zone != null) {
 
-                                // console.log('Creating geometry for zone: ' + dggrs.getZoneTextID(zone))
+                                if (i == 1) {
+
+                                    console.log('Creating geometry for zone: ' + dggrs.getZoneTextID(zone))
+                                }
 
                                 // const vertices = dggrs.getZoneRefinedWGS84Vertices(zone, 0);
                                 const vertices = dggrs.getZoneWGS84Vertices(zone);
@@ -1230,7 +1250,7 @@ export class ExplorerComponent implements OnInit, OnDestroy, AfterViewInit {
                                     }
                                 } else {
                                     console.log('No vertices returned for zone');
-                                    return;
+                                    return [];
                                 }
 
                                 try {
@@ -1248,7 +1268,6 @@ export class ExplorerComponent implements OnInit, OnDestroy, AfterViewInit {
                 }
             }
 
-            return features;
         }
         catch (e) {
             console.log('Error creating geojson from dggsjosn response', e);
@@ -1258,5 +1277,9 @@ export class ExplorerComponent implements OnInit, OnDestroy, AfterViewInit {
 
         }
 
+        console.log('Zone feature count', features.length);
+
+
+        return features;
     }
 }

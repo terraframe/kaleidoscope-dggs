@@ -1,6 +1,7 @@
 package ai.terraframe.kaleidoscope.dggs.core.service;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
@@ -22,7 +23,7 @@ import ai.terraframe.kaleidoscope.dggs.core.model.dggs.QueryableProperties;
 @Service
 public class CollectionMetadataService
 {
-  private static final String                          DEFAULT_DGGRS = "ISEA3H";
+  private static final List<String>                    DEFAULT_DGGRS = Arrays.asList("ISEA3H", "IVEA3H");
 
   @Autowired
   private RemoteDggsServiceIF                          service;
@@ -51,7 +52,7 @@ public class CollectionMetadataService
 
         List<Dggrs> dggrses = dggs.getDggrs();
 
-        Optional<Dggrs> dggrs = dggrses.stream().filter(dggr -> dggr.getId().equals(DEFAULT_DGGRS)) //
+        Optional<Dggrs> dggrs = dggrses.stream().filter(d -> DEFAULT_DGGRS.contains(d.getId())) //
             .findFirst() //
             .or(() -> dggrses.size() > 0 ? Optional.ofNullable(dggrses.get(0)) : Optional.empty());
 
@@ -62,18 +63,28 @@ public class CollectionMetadataService
 
             CollectionDggs dggses = this.service.dggs(collection.getUrl(), collectionId, dggr.getId());
 
-            this.service.queryables(collection.getUrl(), collectionId).ifPresent(queryables -> {
-              QueryableProperties properties = queryables.getProperties();
-              properties.getProperties() //
-                  .entrySet() //
-                  .stream() //
-                  .filter(entry -> !StringUtils.isBlank(entry.getValue().getType())) //
-                  .filter(entry -> !entry.getValue().getType().equals("date")) //
-                  .filter(entry -> !entry.getKey().equals("date")) //
-                  .forEach(entry -> {
-                    attributes.add(new CollectionAttribute(entry.getKey(), entry.getValue().getDescription()));
-                  });
-            });
+            try
+            {
+
+              this.service.queryables(collection.getUrl(), collectionId).ifPresent(queryables -> {
+                QueryableProperties properties = queryables.getProperties();
+                properties.getProperties() //
+                    .entrySet() //
+                    .stream() //
+                    .filter(entry -> !StringUtils.isBlank(entry.getValue().getType())) //
+                    .filter(entry -> !entry.getValue().getType().equals("date")) //
+                    // .filter(entry -> !entry.getKey().equals("date")) //
+                    .forEach(entry -> {
+                      attributes.add(new CollectionAttribute(entry.getKey(), entry.getValue().getDescription(), entry.getValue().getType()));
+                    });
+              });
+            }
+            catch (Exception e)
+            {
+              // Ignore errors - Assume the server does not support the
+              // queryables endpoint because its not part of the standard API
+              // spec
+            }
 
             return new CollectionMetadata(collectionId, attributes, dggs, dggses, dggr);
           }

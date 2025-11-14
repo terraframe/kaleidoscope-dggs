@@ -4,12 +4,15 @@ import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import ai.terraframe.kaleidoscope.dggs.core.serialization.IntervalDeserializer;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
 @Data
 @AllArgsConstructor
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class Interval
 {
   private List<Date> dates;

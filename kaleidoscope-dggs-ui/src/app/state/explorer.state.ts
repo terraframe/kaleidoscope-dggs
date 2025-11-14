@@ -13,7 +13,7 @@ import { Feature, LngLatBoundsLike } from "maplibre-gl";
 export const ExplorerActions = createActionGroup({
     source: 'explorer',
     events: {
-        'Set Dggsjson': props<{ dggsjson: DggsJson[] }>(),
+        'Set Dggsjson': props<{ dggsjson: DggsJson[] | null }>(),
 
         'Set Zones': props<{ collection: ZoneCollection }>(),
         // 'Add GeoObject': props<{ object: GeoObject }>(),
@@ -40,7 +40,7 @@ export enum WorkflowStep {
 }
 
 export interface ExplorerStateModel {
-    dggsjson: DggsJson[] // Zones as dggs json data
+    dggsjson: DggsJson[] | null // Zones as dggs json data
     zones: Feature[]; // Zones as geojson data
     neighbors: GeoObject[];
     styles: StyleConfig;

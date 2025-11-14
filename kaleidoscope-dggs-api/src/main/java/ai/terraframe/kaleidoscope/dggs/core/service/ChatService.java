@@ -272,7 +272,9 @@ public class ChatService
         }
         catch (IOException | InterruptedException e)
         {
-          throw new GenericRestException("Unable to get zone information for the collection [" + collectionId + "] and the bounds of [" + location.getProperties().get("label") + "]");
+          e.printStackTrace();
+          
+          throw new GenericRestException("Unable to get dggs json data for the collection [" + collectionId + "] and zone id[" + zoneId + "]");
         }
       }).toList();
 

@@ -8,12 +8,15 @@ import java.util.Map;
 import java.util.Optional;
 
 import org.apache.commons.collections4.map.LRUMap;
+import org.locationtech.jts.geom.Envelope;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import ai.terraframe.kaleidoscope.dggs.core.model.GenericRestException;
 import ai.terraframe.kaleidoscope.dggs.core.model.dggs.Collection;
 import ai.terraframe.kaleidoscope.dggs.core.model.dggs.CollectionsAndLinks;
+import ai.terraframe.kaleidoscope.dggs.core.model.dggs.Extent;
+import ai.terraframe.kaleidoscope.dggs.core.model.dggs.Spatial;
 
 @Service
 public class CollectionService
@@ -32,6 +35,9 @@ public class CollectionService
   {
     if (this.cache == null)
     {
+      // Manitoba bbox = -102.216797,48.487486,-88.857422,59.977005
+      Envelope envelope = new Envelope(-102.216797, -88.857422, 48.487486, 59.977005);
+
       this.cache = Collections.synchronizedMap(new LRUMap<String, Collection>(20));
 
       try
@@ -40,7 +46,31 @@ public class CollectionService
 
         for (CollectionsAndLinks v : map.values())
         {
-          v.getCollections().forEach(c -> this.cache.put(c.getId(), c));
+          // Filter the collections to only those that have data in manitoba
+          v.getCollections().stream().filter(c -> {
+
+            Extent extent = c.getExtent();
+
+            if (extent != null)
+            {
+              Spatial spatial = extent.getSpatial();
+
+              if (spatial != null)
+              {
+                List<Envelope> list = spatial.getBbox();
+
+                for (Envelope bbox : list)
+                {
+                  if (bbox.intersects(envelope))
+                  {
+                    return true;
+                  }
+                }
+              }
+            }
+
+            return false;
+          }).forEach(c -> this.cache.put(c.getId(), c));
         }
       }
       catch (InterruptedException | IOException e)

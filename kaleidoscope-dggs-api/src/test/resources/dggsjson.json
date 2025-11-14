@@ -1,6 +1,10 @@
 {
     "dggrs": "ISEA3H",
-    "values": [
+    "zoneId": "E0-1058-D",
+    "depths": [
+        "5"
+    ],    
+    "values": 
         {
             "Temperature 2021-01-17T00:00:00Z": [
                 {
@@ -13,9 +17,5 @@
                 }
             ]
         }
-    ],
-    "depths": [
-        "5"
-    ],
-    "zoneId": "E0-1058-D"
+    
 }

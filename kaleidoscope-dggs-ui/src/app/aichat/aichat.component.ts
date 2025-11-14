@@ -236,6 +236,7 @@ export class AichatComponent {
         count: 0
       }
     }));
+    this.store.dispatch(ExplorerActions.setDggsjson({ dggsjson: null }));
     this.store.dispatch(ChatActions.setMessageAndSession({ messages: [], sessionId: uuidv4() }));
   }
 

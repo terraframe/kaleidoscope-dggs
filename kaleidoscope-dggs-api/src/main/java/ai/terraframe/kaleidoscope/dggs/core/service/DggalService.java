@@ -72,14 +72,15 @@ public class DggalService
         // log.trace("At Index", dggrs.getSubZoneAtIndex(parent, 5,
         // BigInt("0")));
 
-        if (dggsjson.getValues().size() > 0 && dggsjson.getDepths().size() > 0)
+        if (dggsjson.getDepths().size() > 0)
         {
-          Map<String, List<PropertyData>> propertyMap = dggsjson.getValues().get(0).getProperties();
+          Map<String, List<PropertyData>> propertyMap = dggsjson.getValues().getProperties();
           int relativeDepth = Integer.parseInt(dggsjson.getDepths().get(0));
 
           if (!propertyMap.isEmpty())
           {
-            String key = propertyMap.keySet().iterator().next();
+            String key = propertyMap.keySet().iterator().next();            
+            
             List<PropertyData> propertyData = propertyMap.get(key);
             List<Object> data = propertyData.get(0).getData();
 

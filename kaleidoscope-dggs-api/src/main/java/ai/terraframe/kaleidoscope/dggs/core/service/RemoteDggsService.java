@@ -46,14 +46,17 @@ import ai.terraframe.kaleidoscope.dggs.core.serialization.IntervalDeserializer;
 @Service
 public class RemoteDggsService implements RemoteDggsServiceIF
 {
-  private static final Logger       log = LoggerFactory.getLogger(RemoteDggsService.class);
+  private static final Logger            log = LoggerFactory.getLogger(RemoteDggsService.class);
 
   @Autowired
-  private AppProperties             properties;
+  private AppProperties                  properties;
 
-  private Map<String, Zones>        zones;
+  @Autowired
+  private DggsServerConfigurationService configurationService;
 
-  private Map<String, DggsJsonData> dggsjson;
+  private Map<String, Zones>             zones;
+
+  private Map<String, DggsJsonData>      dggsjson;
 
   public RemoteDggsService()
   {
@@ -77,7 +80,7 @@ public class RemoteDggsService implements RemoteDggsServiceIF
           .header("Content-Type", "application/json") //
           .GET().build();
 
-      log.trace("Remote request: [" + request.toString() + "]");
+      System.out.println("Remote request: [" + request.toString() + "]");
 
       HttpClient client = HttpClient.newHttpClient();
 
@@ -106,7 +109,7 @@ public class RemoteDggsService implements RemoteDggsServiceIF
   @Override
   public DggrsAndLinks dggs(String baseUrl, String collectionId) throws IOException, InterruptedException
   {
-    String url = baseUrl + "/collections/" + collectionId + "/dggs/";
+    String url = baseUrl + "/collections/" + collectionId + "/dggs";
 
     String params = "f=json";
 
@@ -115,7 +118,7 @@ public class RemoteDggsService implements RemoteDggsServiceIF
         .header("Content-Type", "application/json") //
         .GET().build();
 
-    log.trace("Remote request: [" + request.toString() + "]");
+    System.out.println("Remote request: [" + request.toString() + "]");
 
     HttpClient client = HttpClient.newHttpClient();
 
@@ -149,7 +152,7 @@ public class RemoteDggsService implements RemoteDggsServiceIF
         .header("Content-Type", "application/json") //
         .GET().build();
 
-    log.trace("Remote request: [" + request.toString() + "]");
+    System.out.println("Remote request: [" + request.toString() + "]");
 
     HttpClient client = HttpClient.newHttpClient();
 
@@ -182,7 +185,7 @@ public class RemoteDggsService implements RemoteDggsServiceIF
         .header("Content-Type", "application/json") //
         .GET().build();
 
-    log.trace("Remote request: [" + request.toString() + "]");
+    System.out.println("Remote request: [" + request.toString() + "]");
 
     HttpClient client = HttpClient.newHttpClient();
 
@@ -220,11 +223,10 @@ public class RemoteDggsService implements RemoteDggsServiceIF
     String baseUrl = collection.getUrl() + "/collections/" + collection.getId() + "/dggs/" + dggr.getId() + "/zones";
 
     String params = "f=json";
-    params += "&bbox=" + envelope.getMinX();
-    params += "&bbox=" + envelope.getMinY();
-    params += "&bbox=" + envelope.getMaxX();
-    params += "&bbox=" + envelope.getMaxY();
+
+    params += this.configurationService.getBBoxParam(collection.getUrl(), envelope);
     params += "&bbox-crs=" + URLEncoder.encode("https://www.opengis.net/def/crs/EPSG/0/4326", "UTF-8");
+
     params = resolveDatetimeParameter(collection, datetime, params);
 
     if (zoneLevel != null)
@@ -246,13 +248,21 @@ public class RemoteDggsService implements RemoteDggsServiceIF
       return this.zones.get(url);
     }
 
-    log.trace("Remote request: [" + url + "]");
+    System.out.println("Remote request: [" + url + "]");
 
     HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
     if (response.statusCode() == 200)
     {
       String body = response.body();
+
+      System.out.println();
+      System.out.println();
+      System.out.println();
+      System.out.println(body);
+      System.out.println();
+      System.out.println();
+      System.out.println();
 
       ObjectMapper mapper = new ObjectMapper();
 
@@ -299,7 +309,7 @@ public class RemoteDggsService implements RemoteDggsServiceIF
 
     HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
-    log.trace("Remote request: [" + request.toString() + "]");
+    System.out.println("Remote request: [" + request.toString() + "]");
 
     if (response.statusCode() == 200)
     {
@@ -329,6 +339,10 @@ public class RemoteDggsService implements RemoteDggsServiceIF
     {
       params += "&zone-depth=" + zoneDepth;
     }
+    else if (this.configurationService.hasDefaultZoneDepth(collection.getUrl()))
+    {
+      params += "&zone-depth=" + this.configurationService.getDefaultZoneDepth(collection.getUrl());
+    }
 
     if (filter != null)
     {
@@ -348,7 +362,7 @@ public class RemoteDggsService implements RemoteDggsServiceIF
       return this.dggsjson.get(url);
     }
 
-    log.trace("Remote request: [" + url + "]");
+    System.out.println("Remote request: [" + url + "]");
 
     HttpClient client = HttpClient.newHttpClient();
 
@@ -361,6 +375,7 @@ public class RemoteDggsService implements RemoteDggsServiceIF
       ObjectMapper mapper = new ObjectMapper();
 
       DggsJsonData value = mapper.readerFor(DggsJsonData.class).readValue(body);
+      value.setDggrs(dggrs.getId());
 
       // Cache the response
       this.dggsjson.put(url, value);
