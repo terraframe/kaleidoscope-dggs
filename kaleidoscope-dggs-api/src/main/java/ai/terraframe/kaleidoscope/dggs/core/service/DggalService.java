@@ -24,6 +24,7 @@ import org.springframework.stereotype.Service;
 import ai.terraframe.kaleidoscope.dggs.core.model.GenericRestException;
 import ai.terraframe.kaleidoscope.dggs.core.model.dggs.DggsJsonData;
 import ai.terraframe.kaleidoscope.dggs.core.model.dggs.PropertyData;
+import jakarta.annotation.PreDestroy;
 
 @Service
 public class DggalService
@@ -32,9 +33,37 @@ public class DggalService
 
   private final DGGAL         dggal;
 
+  private MemorySegment       module;
+
   public DggalService()
   {
     this.dggal = DGGAL.global();
+
+    try
+    {
+      this.module = dggal.init();
+    }
+    catch (Throwable e)
+    {
+      throw new RuntimeException(e);
+    }
+
+  }
+
+  @PreDestroy
+  public void destroy()
+  {
+    if (this.module != null)
+    {
+      try
+      {
+        this.dggal.terminate(this.module);
+      }
+      catch (Throwable e)
+      {
+        throw new RuntimeException(e);
+      }
+    }
   }
 
   public List<SimpleFeature> dggsjsonToFeatures(DggsJsonData dggsjson)
@@ -49,8 +78,6 @@ public class DggalService
     List<SimpleFeature> features = new LinkedList<>();
     try
     {
-      MemorySegment module = dggal.init();
-
       final DggalDggrs dggrs = dggal.newDggrs(module, dggsjson.getDggrs());
 
       try
@@ -79,8 +106,8 @@ public class DggalService
 
           if (!propertyMap.isEmpty())
           {
-            String key = propertyMap.keySet().iterator().next();            
-            
+            String key = propertyMap.keySet().iterator().next();
+
             List<PropertyData> propertyData = propertyMap.get(key);
             List<Object> data = propertyData.get(0).getData();
 
@@ -155,14 +182,7 @@ public class DggalService
       }
       finally
       {
-        try
-        {
-          dggrs.close();
-        }
-        finally
-        {
-          dggal.terminate(module);
-        }
+        dggrs.close();
       }
     }
     catch (Throwable e)
@@ -177,8 +197,6 @@ public class DggalService
   {
     try
     {
-      MemorySegment module = dggal.init();
-
       // todo a simple demo case
       final DggalDggrs dggrs = dggal.newDggrs(module, dggrsId);
 
@@ -200,14 +218,7 @@ public class DggalService
       }
       finally
       {
-        try
-        {
-          dggrs.close();
-        }
-        finally
-        {
-          dggal.terminate(module);
-        }
+        dggrs.close();
       }
     }
     catch (Throwable e)
