@@ -26,7 +26,7 @@
 
                 <ng-template #footer>
                     <tr>
-                        <td colspan="3">
+                        <td [attr.colspan]="hasPopulation ? 4 : 3">
                             <p-paginator (onPageChange)="onPageChange($event)" [first]="page.offset" [rows]="page.limit"
                                 [totalRecords]="page.count" />
 
