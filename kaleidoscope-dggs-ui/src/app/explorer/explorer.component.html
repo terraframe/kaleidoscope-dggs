@@ -95,6 +95,18 @@
 	</p-panel>
 	-->
 
+	<!-- Sub collection -->
+	<p-panel *ngIf="subcollections.length > 1" [toggleable]="true" header="Sub collections" collapsed="true" class="legend">
+		<div>
+			<div class="legend-item horizontal-layout" *ngFor="let layer of subcollections">
+				<p-checkbox binary="true" [ngModel]="subcollection === layer" [inputId]="layer" (onChange)="setSubCollection(layer)" />
+				<label [for]="subcollection" class="ml-2">{{ layer }}</label>
+			</div>
+		</div>
+		
+	</p-panel>
+
+
 	<!--
 		<div *ngIf="selectedObject" class="inspector">
 			<h2 class="inspector-title">{{selectedObject.properties.label}}</h2>

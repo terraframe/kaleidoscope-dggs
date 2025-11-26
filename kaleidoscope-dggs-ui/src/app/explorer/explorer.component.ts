@@ -136,6 +136,10 @@ export class ExplorerComponent implements OnInit, OnDestroy, AfterViewInit {
 
     public chatMinimized: boolean = false;
 
+    subcollections: string[] = [];
+
+    subcollection: string | null = null;
+
     public page: LocationPage = {
         locations: [],
         limit: 100,
@@ -231,44 +235,10 @@ export class ExplorerComponent implements OnInit, OnDestroy, AfterViewInit {
             .subscribe(dggsjsons => {
 
                 if (this.initialized) {
-                    if (dggsjsons != null) {
 
-                        const features = dggsjsons.flatMap(dggsjson => this.dggsjsonToFeatures(dggsjson));
+                    this.updateSubCollections(dggsjsons);
 
-                        console.log('Total Feature count', features.length);
-
-                        const geojson: any = {
-                            type: "FeatureCollection",
-                            features: features
-                        }
-
-                        const arr = features.map(feature => feature.properties.value);
-                        let minVal = Math.min(...arr);
-                        let maxVal = Math.max(...arr);
-
-                        this.map!.setPaintProperty(
-                            'data-shape',
-                            'fill-color',
-                            [
-                                'interpolate',
-                                ['linear'],
-                                ['get', 'value'],
-                                minVal, GREEN,
-                                maxVal, RED
-                            ],
-                        );
-
-                        const source = this.map!.getSource('data') as GeoJSONSource;
-                        source.setData(geojson);
-                    }
-                    else {
-                        const source = this.map!.getSource('data') as GeoJSONSource;
-
-                        source.setData({
-                            type: "FeatureCollection",
-                            features: []
-                        });
-                    }
+                    this.processDggsjsons(dggsjsons);
                 }
             })
 
@@ -1079,6 +1049,7 @@ export class ExplorerComponent implements OnInit, OnDestroy, AfterViewInit {
         });
     }
 
+
     handleMapClickEvent(e: any): void {
         // this.vectorLayers$.pipe(take(1)).subscribe(vectorLayers => {
 
@@ -1175,53 +1146,99 @@ export class ExplorerComponent implements OnInit, OnDestroy, AfterViewInit {
         this.store.dispatch(ExplorerActions.setVectorLayer({ layer: newLayer }));
     }
 
+    setSubCollection(sc: string): void {
+        if (this.subcollection !== sc) {
+            this.subcollection = sc;
+
+            this.dggsjson$
+                .pipe(take(1))
+                .subscribe(dggsjsons => this.processDggsjsons(dggsjsons));
+        }
+    }
+
+    updateSubCollections(dggsjsons: DggsJson[] | null): void {
+        this.subcollections = [];
+        this.subcollection = null;
+
+        if (dggsjsons != null && dggsjsons.length > 0) {
+            const dggsjson = dggsjsons[0];
+
+            const propertyMap = dggsjson.values.properties;
+
+            this.subcollections = Object.keys(propertyMap).filter(k => k != 'zone_id');
+
+            if (this.subcollections.length > 0) {
+                this.subcollection = this.subcollections[0];
+            }
+        }
+    }
+
+    processDggsjsons(dggsjsons: DggsJson[] | null): void {
+        if (dggsjsons != null) {
+
+            const features = dggsjsons.flatMap(dggsjson => this.dggsjsonToFeatures(dggsjson));
+
+            // Boundary zones from multiple parent zones may duplicate
+            const uniqueFeatures = features.filter((value, index) => {
+                return (
+                    index ===
+                    features.findIndex((feature) => {
+                        return feature.properties.id === value.properties.id;
+                    })
+                );
+            });
+
+            const geojson: any = {
+                type: "FeatureCollection",
+                features: uniqueFeatures
+            }
+
+            const arr = uniqueFeatures.map(feature => feature.properties.value);
+            let minVal = Math.min(...arr);
+            let maxVal = Math.max(...arr);
+
+            this.map!.setPaintProperty(
+                'data-shape',
+                'fill-color',
+                [
+                    'interpolate',
+                    ['linear'],
+                    ['get', 'value'],
+                    minVal, GREEN,
+                    maxVal, RED
+                ],
+            );
+
+
+            const source = this.map!.getSource('data') as GeoJSONSource;
+            source.setData(geojson);
+        }
+        else {
+            const source = this.map!.getSource('data') as GeoJSONSource;
+
+            source.setData({
+                type: "FeatureCollection",
+                features: []
+            });
+        }
+
+    }
+
     dggsjsonToFeatures(dggsjson: DggsJson): any[] {
         const features = [];
 
-        const dggrs = this.dggal!.createDGGRS(dggsjson.dggrs);
+        if (this.subcollection != null) {
 
-        try {
-            console.log('Processing zone response: ' + dggsjson.zoneId)
-            // const low = BigInt.asUintN(64, 12130488n);
+            const dggrs = this.dggal!.createDGGRS(dggsjson.dggrs);
 
-            // console.log("Max depth", dggrs.getMaxDepth());
+            try {
+                const parent = dggrs.getZoneFromTextID(dggsjson.zoneId);
 
-            const parent = dggrs.getZoneFromTextID(dggsjson.zoneId);
+                if (parent != null && dggsjson.depths.length > 0) {
+                    const propertyMap = dggsjson.values.properties;
 
-            // console.log('Parent level', dggrs.getZoneLevel(parent));
-
-            // const first = dggrs.getFirstSubZone(parent, 5);
-
-            // console.log('First subzone', first);
-
-            // console.log('Index', dggrs.getSubZoneIndex(parent, first));
-            // console.log('At Index', dggrs.getSubZoneAtIndex(parent, 5, BigInt("0")));
-
-            console.log('Parent: ', parent);
-
-            if (parent != null && dggsjson.depths.length > 0) {
-                const propertyMap = dggsjson.values.properties;
-                const keys = Object.keys(propertyMap).filter(k => k != 'zone_id');
-                const relativeDepth = parseInt(dggsjson.depths[0]);
-
-                console.log('Keys: ' + keys)
-
-
-                if (keys.length > 0) {
-                    const propertyData = propertyMap[keys[0]];
+                    const propertyData = propertyMap[this.subcollection!];
                     const data = propertyData[0].data;
-                    // const zones = dggrs.getSubZones(parent, relativeDepth);
-
-                    // if (data.length !== zones.length) {
-                    //     console.log('Subzone count mismatch for zone [' + dggsjson.zoneId + ']: ' + data.length + ", " + zones.length)
-
-                    //     console.log('Data: ', data)
-                    //     console.log('Zones: ', zones)
-
-                    //     console.log('First subzone', dggrs.getFirstSubZone(parent, 5));
-                    //     console.log('At Index', dggrs.getSubZoneAtIndex(parent, 5, BigInt(0)));
-                    // }
-
 
                     for (let i = 0; i < data.length; i++) {
 
@@ -1229,15 +1246,10 @@ export class ExplorerComponent implements OnInit, OnDestroy, AfterViewInit {
                             const zone = dggrs.getSubZoneAtIndex(parent, 5, BigInt(i));
 
                             if (zone != null) {
-
-                                if (i == 1) {
-
-                                    console.log('Creating geometry for zone: ' + dggrs.getZoneTextID(zone))
-                                }
+                                const zoneId = dggrs.getZoneTextID(zone);
 
                                 // const vertices = dggrs.getZoneRefinedWGS84Vertices(zone, 0);
                                 const vertices = dggrs.getZoneWGS84Vertices(zone);
-
 
                                 const coordsDeg = (Array.isArray(vertices) ? vertices : []).map(v => [v.lon * 180 / Math.PI, v.lat * 180 / Math.PI]);
 
@@ -1254,31 +1266,28 @@ export class ExplorerComponent implements OnInit, OnDestroy, AfterViewInit {
                                 }
 
                                 try {
-                                    const feature = turf.polygon([coordsDeg], { value: data[i] });
+                                    const feature = turf.polygon([coordsDeg], { id: zoneId, value: data[i] });
 
                                     features.push(feature);
                                 }
                                 catch (e) {
                                     console.log('Unable to create geometry from coordinates', coordsDeg)
                                 }
-
                             }
                         }
                     }
                 }
+
+            }
+            catch (e) {
+                console.log('Error creating geojson from dggsjosn response', e);
+            }
+            finally {
+                dggrs.delete();
+
             }
 
         }
-        catch (e) {
-            console.log('Error creating geojson from dggsjosn response', e);
-        }
-        finally {
-            dggrs.delete();
-
-        }
-
-        console.log('Zone feature count', features.length);
-
 
         return features;
     }

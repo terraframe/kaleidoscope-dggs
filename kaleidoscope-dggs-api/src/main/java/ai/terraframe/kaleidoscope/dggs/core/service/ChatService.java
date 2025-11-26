@@ -140,9 +140,9 @@ public class ChatService
 
         List<DggsJsonData> zones = dggsjson(toolUse);
 
-        List<Location> features = zones.stream() //
-            .flatMap(dggsjon -> this.dggalService.dggsjsonToFeatures(dggsjon).stream()) //
-            .flatMap(feature -> this.jena.getWithinGeometry((Geometry) feature.getDefaultGeometry(), types).stream()).toList();
+        List<Location> features = zones.parallelStream() //
+            .flatMap(dggsjon -> this.dggalService.dggsjsonToFeatures(dggsjon).parallelStream()) //
+            .flatMap(feature -> this.jena.getWithinGeometry((Geometry) feature.getDefaultGeometry(), types).parallelStream()).toList();
 
         return new FeatureMessage(toolUse.getToolUseId(), zones, features);
       }
@@ -152,9 +152,9 @@ public class ChatService
 
         List<DggsJsonData> zones = dggsjson(toolUse);
 
-        Set<Location> features = zones.stream() //
-            .flatMap(dggsjon -> this.dggalService.dggsjsonToFeatures(dggsjon).stream()) //
-            .flatMap(feature -> this.jena.getWithinGeometry((Geometry) feature.getDefaultGeometry(), "http://terraframe.ai#ProvidesPower", types).stream()).collect(Collectors.toSet());
+        Set<Location> features = zones.parallelStream() //
+            .flatMap(dggsjon -> this.dggalService.dggsjsonToFeatures(dggsjon).parallelStream()) //
+            .flatMap(feature -> this.jena.getWithinGeometry((Geometry) feature.getDefaultGeometry(), "http://terraframe.ai#ProvidesPower", types).parallelStream()).collect(Collectors.toSet());
 
         int totalPopulation = features.stream().mapToInt(location -> (int) location.getProperties().get("population")).sum();
 
@@ -262,10 +262,11 @@ public class ChatService
 
     if (zones.getZones().size() > 0)
     {
-//      Integer subzoneDepth = metadata.getDggs().getMaxRefinementLevel() - zoneDepth;
+      // Integer subzoneDepth = metadata.getDggs().getMaxRefinementLevel() -
+      // zoneDepth;
       Integer subzoneDepth = null;
 
-      List<DggsJsonData> data = zones.getZones().stream().map(zoneId -> {
+      List<DggsJsonData> data = zones.getZones().parallelStream().map(zoneId -> {
         try
         {
           return this.dggs.json(collection, metadata.getDggrs(), zoneId, subzoneDepth, datetime, filter);
@@ -273,7 +274,7 @@ public class ChatService
         catch (IOException | InterruptedException e)
         {
           e.printStackTrace();
-          
+
           throw new GenericRestException("Unable to get dggs json data for the collection [" + collectionId + "] and zone id[" + zoneId + "]");
         }
       }).toList();
