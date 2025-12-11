@@ -493,7 +493,8 @@ export class ExplorerComponent implements OnInit, OnDestroy, AfterViewInit {
                                 ["boolean", ["feature-state", "selected"], false],
                                 SELECTED_COLOR,
                                 layer.color
-                            ]
+                            ],
+                            "line-width": 3,
                         }
                     }, layer.id + "-label");
                 }

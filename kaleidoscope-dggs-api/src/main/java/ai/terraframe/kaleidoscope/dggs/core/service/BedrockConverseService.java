@@ -89,9 +89,9 @@ public class BedrockConverseService
         .putString("type", "string") //
         .putString("description", "The uri of the location") //
         .build());
-    properties.put("category", Document.mapBuilder() //
+    properties.put("collection", Document.mapBuilder() //
         .putString("type", "string") //
-        .putString("description", "The subject category") //
+        .putString("description", "The data collection to query") //
         .build());
     properties.put("date", Document.mapBuilder() //
         .putString("type", "string") //
@@ -115,11 +115,11 @@ public class BedrockConverseService
 
     return Tool.fromToolSpec(ToolSpecification.builder() //
         .name(LOCATION_DATA) //
-        .description("Get zone information for a location uri and category.") //
+        .description("Get zone information for a location uri and collection.") //
         .inputSchema(schema -> schema.json(Document.mapBuilder() //
             .putString("type", "object") //
             .putMap("properties", properties) //
-            .putList("required", List.of(Document.fromString("uri"), Document.fromString("category"))) //
+            .putList("required", List.of(Document.fromString("uri"), Document.fromString("collection"))) //
             .build()))
         .build());
   }
@@ -150,9 +150,9 @@ public class BedrockConverseService
         .putString("type", "string") //
         .putString("description", "The uri of the location") //
         .build());
-    properties.put("category", Document.mapBuilder() //
+    properties.put("collection", Document.mapBuilder() //
         .putString("type", "string") //
-        .putString("description", "The subject category") //
+        .putString("description", "The data collection to query") //
         .build());
     properties.put("date", Document.mapBuilder() //
         .putString("type", "string") //
@@ -174,7 +174,7 @@ public class BedrockConverseService
         .inputSchema(schema -> schema.json(Document.mapBuilder() //
             .putString("type", "object") //
             .putMap("properties", properties) //
-            .putList("required", List.of(Document.fromString("uri"), Document.fromString("category"))) //
+            .putList("required", List.of(Document.fromString("uri"), Document.fromString("collection"))) //
             .build()))
         .build());
   }
@@ -186,9 +186,9 @@ public class BedrockConverseService
         .putString("type", "string") //
         .putString("description", "The uri of the location") //
         .build());
-    properties.put("category", Document.mapBuilder() //
+    properties.put("collection", Document.mapBuilder() //
         .putString("type", "string") //
-        .putString("description", "The subject category") //
+        .putString("description", "The data collection to query") //
         .build());
     properties.put("date", Document.mapBuilder() //
         .putString("type", "string") //
@@ -206,11 +206,11 @@ public class BedrockConverseService
 
     return Tool.fromToolSpec(ToolSpecification.builder() //
         .name(ROADS) //
-        .description("Analyzes which roads are impacted by the data for a category and location uri.") //
+        .description("Analyzes which roads are impacted by the data for a collection and location uri.") //
         .inputSchema(schema -> schema.json(Document.mapBuilder() //
             .putString("type", "object") //
             .putMap("properties", properties) //
-            .putList("required", List.of(Document.fromString("uri"), Document.fromString("category"))) //
+            .putList("required", List.of(Document.fromString("uri"), Document.fromString("collection"))) //
             .build()))
         .build());
   }
@@ -222,9 +222,9 @@ public class BedrockConverseService
         .putString("type", "string") //
         .putString("description", "The uri of the location") //
         .build());
-    properties.put("category", Document.mapBuilder() //
+    properties.put("collection", Document.mapBuilder() //
         .putString("type", "string") //
-        .putString("description", "The subject category") //
+        .putString("description", "The data collection to query") //
         .build());
     properties.put("date", Document.mapBuilder() //
         .putString("type", "string") //
@@ -246,7 +246,7 @@ public class BedrockConverseService
         .inputSchema(schema -> schema.json(Document.mapBuilder() //
             .putString("type", "object") //
             .putMap("properties", properties) //
-            .putList("required", List.of(Document.fromString("uri"), Document.fromString("category"))) //
+            .putList("required", List.of(Document.fromString("uri"), Document.fromString("collection"))) //
             .build()))
         .build());
   }
@@ -257,8 +257,8 @@ public class BedrockConverseService
     {
       StringBuilder systemPrompt = new StringBuilder("""
           You are a location analysis assistant that provides the location information based on a user question.
-          The user is going to ask a question about a location.  Categorize the subject of the question as one of the
-          following data collection options:\n\n""");
+          The user is going to ask a question about a location.  Determine the data collection of the question
+          as one of the following options:\n\n""");
 
       collections.forEach(collection -> {
 
@@ -287,19 +287,19 @@ public class BedrockConverseService
 
       systemPrompt.append("""
 
-          If the subject is not one of the category options then tell the user that you do not have any data for that subject.
-          You can use the 'Name_Resolution' to resolve a location name to its location uri.  If multiple subject categories seem
-          appropriate for the question list them and ask the user to select a single one. If you can determine a single subject
-          category and a location uri then you can use one of the following tools based on the users question:
+          If the subject is not one of the collection options then tell the user that you do not have any data for that subject.
+          You can use the 'Name_Resolution' to resolve a location name to its location uri.  If multiple data collections seem
+          appropriate for the question list them and ask the user to select a single one. If you can determine a single collection
+          and a location uri then you can use one of the following tools based on the users question:
 
           'Dissementation_Analysis' - tool to analyze for connected disesementation areas
           'Power_Infrastructure' - tool to get power infrastructure data
-          'Location_Data' - tool to get zone information
           'Road' - tool to analyze road data
+          'Location_Data' - tool to get basic information for the collection
 
-          Otherwise ask follow-up questions to determine the subject category and location uir.
+          Otherwise ask follow-up questions to determine The data collection to query and location uir.
 
-          When using the 'Dissementation_Analysis', 'Power_Infrastructure', or the 'Location_Data' tools the user can additionally
+          When using the 'Dissementation_Analysis', 'Power_Infrastructure', 'Road', or the 'Location_Data' tools the user can additionally
           specify filter criteria using for the 'filter' attribute for the defined attributes above.  The format of the filter
           criteria should be generated as CQL2 Text.  The following are examples of CQL2 Text filters:
 
@@ -407,7 +407,8 @@ public class BedrockConverseService
       }
       catch (ExecutionException | InterruptedException | TimeoutException e)
       {
-        System.err.printf("Can't invoke '%s': %s", modelId, e.getMessage());
+        log.error("Can't invoke: " + modelId, e);
+        
         throw new RuntimeException(e);
       }
     }

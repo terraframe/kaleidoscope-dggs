@@ -198,7 +198,15 @@ export const explorerReducer = createReducer(
     // Set the vector layers & styles
     on(ExplorerActions.setConfiguration, (state, configuration) => {
 
-        return { ...state, vectorLayers: configuration.layers, styles: configuration.styles }
+        return {
+            ...state, vectorLayers: configuration.layers, styles: {
+                ...configuration.styles,
+                'http://terraframe.ai#Highway': {
+                    order: 10,
+                    color: '#2E1A47'
+                }
+            }
+        }
     }),
 
     // Set the vector layer

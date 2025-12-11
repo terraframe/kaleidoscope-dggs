@@ -104,7 +104,7 @@ public class ChatService
     {
       ToolUseResponse toolUse = message.asType(ToolUseResponse.class);
 
-      System.out.println("Executing tool: " + toolUse.getName());
+      log.info("Executing tool: " + toolUse.getName());
 
       if (toolUse.getName().equals(BedrockConverseService.LOCATION_DATA))
       {
@@ -194,7 +194,7 @@ public class ChatService
     if (format != null && format.equals("geojson"))
     {
       String uri = parameters.get("uri").asString();
-      String category = parameters.get("category").asString();
+      String category = parameters.get("collection").asString();
       Date datetime = parameters.containsKey("date") ? IntervalDeserializer.parse(parameters.get("date").asString()) : null;
       String filter = parameters.containsKey("filter") ? parameters.get("filter").asString() : null;
       Integer zoneDepth = parameters.containsKey("zone-depth") ? parameters.get("zone-depth").asNumber().intValue() : Integer.valueOf(9);
@@ -211,7 +211,7 @@ public class ChatService
   {
     Map<String, Document> parameters = toolUse.getParameters();
     String uri = parameters.get("uri").asString();
-    String collectionId = parameters.get("category").asString();
+    String collectionId = parameters.get("collection").asString();
     Date datetime = parameters.containsKey("date") ? IntervalDeserializer.parse(parameters.get("date").asString()) : null;
     String filter = parameters.containsKey("filter") ? parameters.get("filter").asString() : null;
     Integer zoneDepth = parameters.containsKey("zone-depth") ? parameters.get("zone-depth").asNumber().intValue() : Integer.valueOf(9);
