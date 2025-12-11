@@ -70,6 +70,8 @@ public class BedrockConverseService
 
   public static final String        DISSEMINATION_AREAS  = "Dissemination_Area";
 
+  public static final String        ROADS                = "Roads";
+
   private static final int          MAX_TIMEOUT_MINUTES  = 5;
 
   private static final Logger       log                  = LoggerFactory.getLogger(BedrockConverseService.class);
@@ -177,7 +179,43 @@ public class BedrockConverseService
         .build());
   }
 
-  public Tool getDissemenationAreaToolSpec()
+  public Tool getRoadToolSpec()
+  {
+    HashMap<String, Document> properties = new HashMap<>();
+    properties.put("uri", Document.mapBuilder() //
+        .putString("type", "string") //
+        .putString("description", "The uri of the location") //
+        .build());
+    properties.put("category", Document.mapBuilder() //
+        .putString("type", "string") //
+        .putString("description", "The subject category") //
+        .build());
+    properties.put("date", Document.mapBuilder() //
+        .putString("type", "string") //
+        .putString("format", "date-time") //
+        .putString("description", "Optional date supplied in the user question in ISO 8601 format (e.g., 2025-09-30T00:00:00Z") //
+        .build());
+    properties.put("filter", Document.mapBuilder() //
+        .putString("type", "string") //
+        .putString("description", "Optional filter criteria. For example elevation > 2.3)") //
+        .build());
+    properties.put("zone-depth", Document.mapBuilder() //
+        .putString("type", "integer") //
+        .putString("description", "Optional zone depth in which to get the data)") //
+        .build());
+
+    return Tool.fromToolSpec(ToolSpecification.builder() //
+        .name(ROADS) //
+        .description("Analyzes which roads are impacted by the data for a category and location uri.") //
+        .inputSchema(schema -> schema.json(Document.mapBuilder() //
+            .putString("type", "object") //
+            .putMap("properties", properties) //
+            .putList("required", List.of(Document.fromString("uri"), Document.fromString("category"))) //
+            .build()))
+        .build());
+  }
+
+  public Tool getDisseminationAreaToolSpec()
   {
     HashMap<String, Document> properties = new HashMap<>();
     properties.put("uri", Document.mapBuilder() //
@@ -250,12 +288,14 @@ public class BedrockConverseService
       systemPrompt.append("""
 
           If the subject is not one of the category options then tell the user that you do not have any data for that subject.
-          You can use the 'Name_Resolution' to resolve a location name to its location uri. If you can determine
-          the subject category and a location uri then you can use one of the following tools based on the users question:
+          You can use the 'Name_Resolution' to resolve a location name to its location uri.  If multiple subject categories seem
+          appropriate for the question list them and ask the user to select a single one. If you can determine a single subject
+          category and a location uri then you can use one of the following tools based on the users question:
 
           'Dissementation_Analysis' - tool to analyze for connected disesementation areas
           'Power_Infrastructure' - tool to get power infrastructure data
           'Location_Data' - tool to get zone information
+          'Road' - tool to analyze road data
 
           Otherwise ask follow-up questions to determine the subject category and location uir.
 
@@ -302,7 +342,13 @@ public class BedrockConverseService
       CompletableFuture<ConverseResponse> request = client.converse(params -> params //
           .modelId(modelId) //
           .system(system) //
-          .toolConfig(config -> config.tools(getNameResolutionToolSpec(), getLocationDataToolSpec(), getPowerIntrastructureToolSpec(), getDissemenationAreaToolSpec())) //
+          .toolConfig(config -> config.tools( //
+              getNameResolutionToolSpec(), // Resolve name to uri
+              getLocationDataToolSpec(), // DGGS data
+              getPowerIntrastructureToolSpec(), // Zone -> Power
+              getRoadToolSpec(), // Zone -> Roads
+              getDisseminationAreaToolSpec() // Power -> Dissemination Area
+          )) //
           .messages(bedrockMessages) //
           .inferenceConfig(config -> config //
               .topP(0.9F)));

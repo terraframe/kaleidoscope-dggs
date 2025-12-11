@@ -35,6 +35,7 @@ import ai.terraframe.kaleidoscope.dggs.core.model.CollectionMetadata;
 import ai.terraframe.kaleidoscope.dggs.core.model.GenericRestException;
 import ai.terraframe.kaleidoscope.dggs.core.model.Location;
 import ai.terraframe.kaleidoscope.dggs.core.model.LocationPage;
+import ai.terraframe.kaleidoscope.dggs.core.model.LocationType;
 import ai.terraframe.kaleidoscope.dggs.core.model.ZoneCollection;
 import ai.terraframe.kaleidoscope.dggs.core.model.bedrock.BedrockResponse;
 import ai.terraframe.kaleidoscope.dggs.core.model.bedrock.InformationResponse;
@@ -103,6 +104,8 @@ public class ChatService
     {
       ToolUseResponse toolUse = message.asType(ToolUseResponse.class);
 
+      System.out.println("Executing tool: " + toolUse.getName());
+
       if (toolUse.getName().equals(BedrockConverseService.LOCATION_DATA))
       {
         return data(toolUse);
@@ -112,7 +115,7 @@ public class ChatService
         Map<String, Document> parameters = toolUse.getParameters();
         String locationName = parameters.get("locationName").asString();
 
-        LocationPage page = this.jena.fullTextLookup(locationName);
+        LocationPage page = this.jena.fullTextLookup(LocationType.SUBDIVISION.getUri(), locationName);
 
         if (page.getCount() == 0)
         {
@@ -136,25 +139,37 @@ public class ChatService
       }
       else if (toolUse.getName().equals(BedrockConverseService.POWER_INFRASTRUCTURE))
       {
-        String[] types = new String[] { "http://terraframe.ai#PowerStation", "http://terraframe.ai#PowerSubstation", "http://terraframe.ai#PowerTransformer" };
+        String[] types = new String[] { LocationType.POWER_STATION.getUri(), LocationType.POWER_SUB_STATION.getUri(), LocationType.POWER_TRANSFORMER.getUri() };
 
         List<DggsJsonData> zones = dggsjson(toolUse);
 
         List<Location> features = zones.parallelStream() //
             .flatMap(dggsjon -> this.dggalService.dggsjsonToFeatures(dggsjon).parallelStream()) //
-            .flatMap(feature -> this.jena.getWithinGeometry((Geometry) feature.getDefaultGeometry(), types).parallelStream()).toList();
+            .flatMap(feature -> this.jena.getContainsGeometry((Geometry) feature.getDefaultGeometry(), types).parallelStream()).toList();
+
+        return new FeatureMessage(toolUse.getToolUseId(), zones, features);
+      }
+      else if (toolUse.getName().equals(BedrockConverseService.ROADS))
+      {
+        String[] types = new String[] { LocationType.HIGHWAY.getUri() };
+
+        List<DggsJsonData> zones = dggsjson(toolUse);
+
+        List<Location> features = zones.parallelStream() //
+            .flatMap(dggsjon -> this.dggalService.dggsjsonToFeatures(dggsjon).parallelStream()) //
+            .flatMap(feature -> this.jena.getIntersectsGeometry((Geometry) feature.getDefaultGeometry(), types).parallelStream()).toList();
 
         return new FeatureMessage(toolUse.getToolUseId(), zones, features);
       }
       else if (toolUse.getName().equals(BedrockConverseService.DISSEMINATION_AREAS))
       {
-        String[] types = new String[] { "http://terraframe.ai#PowerStation", "http://terraframe.ai#PowerSubstation", "http://terraframe.ai#PowerTransformer" };
+        String[] types = new String[] { LocationType.POWER_STATION.getUri(), LocationType.POWER_SUB_STATION.getUri(), LocationType.POWER_TRANSFORMER.getUri() };
 
         List<DggsJsonData> zones = dggsjson(toolUse);
 
         Set<Location> features = zones.parallelStream() //
             .flatMap(dggsjon -> this.dggalService.dggsjsonToFeatures(dggsjon).parallelStream()) //
-            .flatMap(feature -> this.jena.getWithinGeometry((Geometry) feature.getDefaultGeometry(), "http://terraframe.ai#ProvidesPower", types).parallelStream()).collect(Collectors.toSet());
+            .flatMap(feature -> this.jena.getDownstreamOfGeometry((Geometry) feature.getDefaultGeometry(), LocationType.PROVIDES_POWER.getUri(), types).parallelStream()).collect(Collectors.toSet());
 
         int totalPopulation = features.stream().mapToInt(location -> (int) location.getProperties().get("population")).sum();
 

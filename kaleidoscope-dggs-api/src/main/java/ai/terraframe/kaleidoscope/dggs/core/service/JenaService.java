@@ -59,7 +59,7 @@ public class JenaService
       """;
 
   public static String       FULL_TEXT_LOOKUP = PREFIXES + """
-            SELECT ?uri ?code ?label ?type ?wkt
+            SELECT ?uri ?code ?label ?wkt
             FROM <http://terraframe.ai/g1>
             WHERE {
               (?uri ?score) text:query (rdfs:label ?query) .
@@ -195,7 +195,7 @@ public class JenaService
     }
   }
 
-  public LocationPage fullTextLookup(String locationName)
+  public LocationPage fullTextLookup(String type, String locationName)
   {
     RDFConnectionRemoteBuilder builder = RDFConnectionRemote.create().destination(properties.getJenaUrl());
 
@@ -207,6 +207,7 @@ public class JenaService
       ParameterizedSparqlString pss = new ParameterizedSparqlString();
       pss.setCommandText(FULL_TEXT_LOOKUP);
 
+      pss.setIri("type", type);
       pss.setLiteral("query", locationName);
 
       try (QueryExecution qe = conn.query(pss.asQuery()))
@@ -221,7 +222,6 @@ public class JenaService
           String code = qs.getLiteral("code").getString();
           String wkt = qs.getLiteral("wkt").getString();
           String label = qs.getLiteral("label").getString();
-          String type = readString(qs, "type");
 
           WKTReader reader = WKTReader.extract(wkt);
           Geometry geometry = reader.getGeometry();
@@ -275,7 +275,17 @@ public class JenaService
     throw new GenericRestException("Unable to find an object with the URI [" + uri + "]");
   }
 
-  public List<Location> getWithinGeometry(Geometry envelope, String... types)
+  public List<Location> getIntersectsGeometry(Geometry envelope, String... types)
+  {
+    return getLocations(envelope, "geof:sfIntersects", types);
+  }
+  
+  public List<Location> getContainsGeometry(Geometry envelope, String... types)
+  {
+    return getLocations(envelope, "geof:sfContains", types);
+  }
+
+  private List<Location> getLocations(Geometry envelope, String function, String... types)
   {
     RDFConnectionRemoteBuilder builder = RDFConnectionRemote.create().destination(properties.getJenaUrl());
 
@@ -295,7 +305,7 @@ public class JenaService
             ?uri a ?type .
             ?uri rdfs:label ?label .
             ?uri ai:GeoObject-code ?code .
-            FILTER (geof:sfContains(?envelope, ?wkt))""");
+            FILTER ( """ + function + "(?envelope, ?wkt))");
 
       if (types.length > 0)
       {
@@ -350,7 +360,7 @@ public class JenaService
     return results;
   }
 
-  public List<Location> getWithinGeometry(Geometry envelope, String predicate, String... types)
+  public List<Location> getDownstreamOfGeometry(Geometry envelope, String predicate, String... types)
   {
     RDFConnectionRemoteBuilder builder = RDFConnectionRemote.create().destination(properties.getJenaUrl());
 

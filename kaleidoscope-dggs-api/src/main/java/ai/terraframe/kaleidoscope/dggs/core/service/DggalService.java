@@ -72,6 +72,7 @@ public class DggalService
     typeBuilder.setName("PolygonFeature");
     typeBuilder.add("geometry", Polygon.class); // Geometry attribute
     typeBuilder.add("value", Double.class); // Example attribute
+    typeBuilder.add("zone", String.class); // Example attribute
 
     SimpleFeatureType featureType = typeBuilder.buildFeatureType();
 

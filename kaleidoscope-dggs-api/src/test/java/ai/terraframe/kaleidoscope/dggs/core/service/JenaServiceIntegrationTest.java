@@ -40,7 +40,7 @@ public class JenaServiceIntegrationTest
   @Test
   public void testFullTextLookup() throws InterruptedException, ExecutionException, TimeoutException
   {
-    LocationPage page = this.service.fullTextLookup("Winnipeg");
+    LocationPage page = this.service.fullTextLookup("http://terraframe.ai#Subdivision", "Winnipeg");
 
     Assert.assertEquals(2, page.getCount());
 
@@ -83,7 +83,7 @@ public class JenaServiceIntegrationTest
     WKTReader reader = WKTReader.extract(wkt);
     Geometry envelope = reader.getGeometry();
 
-    List<Location> locations = this.service.getWithinGeometry(envelope, types);
+    List<Location> locations = this.service.getContainsGeometry(envelope, types);
 
     Assert.assertEquals(23, locations.size());
   }
@@ -96,7 +96,7 @@ public class JenaServiceIntegrationTest
     String[] types = new String[] { "http://terraframe.ai#PowerStation", "http://terraframe.ai#PowerSubstation", "http://terraframe.ai#PowerTransformer" };
 
     List<Location> locations = this.dggalService.dggsjsonToFeatures(dggsjson).stream() //
-        .flatMap(feature -> this.service.getWithinGeometry((Geometry) feature.getDefaultGeometry(), types).stream()).toList();
+        .flatMap(feature -> this.service.getContainsGeometry((Geometry) feature.getDefaultGeometry(), types).stream()).toList();
 
     Assert.assertEquals(3, locations.size());
   }
@@ -109,7 +109,7 @@ public class JenaServiceIntegrationTest
     String[] types = new String[] { "http://terraframe.ai#PowerStation", "http://terraframe.ai#PowerSubstation", "http://terraframe.ai#PowerTransformer" };
 
     Set<Location> locations = this.dggalService.dggsjsonToFeatures(dggsjson).stream() //
-        .flatMap(feature -> this.service.getWithinGeometry((Geometry) feature.getDefaultGeometry(), "http://terraframe.ai#ProvidesPower", types).stream()) //
+        .flatMap(feature -> this.service.getDownstreamOfGeometry((Geometry) feature.getDefaultGeometry(), "http://terraframe.ai#ProvidesPower", types).stream()) //
         .collect(Collectors.toSet());
 
     Assert.assertEquals(70, locations.size());
