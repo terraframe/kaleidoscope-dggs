@@ -14,7 +14,7 @@ public class AppProperties
 
   public String getModel()
   {
-    return env.getProperty("bedrock.model", "us.anthropic.claude-3-7-sonnet-20250219-v1:0");
+    return env.getProperty("bedrock.model", "us.anthropic.claude-sonnet-4-6");
   }
 
   public Region getRegion()

@@ -70,7 +70,7 @@ public class BedrockConverseServiceIntegrationTest
 
     Assert.assertEquals(BedrockConverseService.LOCATION_DATA, toolUse.getName());
     Assert.assertEquals(uri, toolUse.getParameters().get("uri").asString());
-    Assert.assertEquals("winnipeg-dem", toolUse.getParameters().get("category").asString());
+    Assert.assertEquals("winnipeg-dem", toolUse.getParameters().get("collection").asString());
     Assert.assertFalse(toolUse.getParameters().containsKey("date"));
   }
 
@@ -96,7 +96,7 @@ public class BedrockConverseServiceIntegrationTest
 
     Assert.assertEquals(BedrockConverseService.LOCATION_DATA, toolUse.getName());
     Assert.assertEquals(uri, toolUse.getParameters().get("uri").asString());
-    Assert.assertEquals("winnipeg-dem", toolUse.getParameters().get("category").asString());
+    Assert.assertEquals("winnipeg-dem", toolUse.getParameters().get("collection").asString());
     Assert.assertTrue(toolUse.getParameters().containsKey("date"));
     Assert.assertEquals("2020-01-17T00:00:00Z", toolUse.getParameters().get("date").asString());
   }
@@ -123,7 +123,7 @@ public class BedrockConverseServiceIntegrationTest
 
     Assert.assertEquals(BedrockConverseService.LOCATION_DATA, toolUse.getName());
     Assert.assertEquals(uri, toolUse.getParameters().get("uri").asString());
-    Assert.assertEquals("winnipeg-dem", toolUse.getParameters().get("category").asString());
+    Assert.assertEquals("winnipeg-dem", toolUse.getParameters().get("collection").asString());
     Assert.assertTrue(toolUse.getParameters().containsKey("filter"));
     Assert.assertEquals("waterlevel > 10.5", toolUse.getParameters().get("filter").asString());
   }
@@ -172,7 +172,7 @@ public class BedrockConverseServiceIntegrationTest
 
     Assert.assertEquals(BedrockConverseService.LOCATION_DATA, toolUse.getName());
     Assert.assertEquals(uri, toolUse.getParameters().get("uri").asString());
-    Assert.assertEquals("winnipeg-dem", toolUse.getParameters().get("category").asString());
+    Assert.assertEquals("winnipeg-dem", toolUse.getParameters().get("collection").asString());
     Assert.assertTrue(toolUse.getParameters().containsKey("zone-depth"));
     Assert.assertEquals(12, toolUse.getParameters().get("zone-depth").asNumber().intValue());
   }
@@ -199,7 +199,7 @@ public class BedrockConverseServiceIntegrationTest
 
     Assert.assertEquals(BedrockConverseService.POWER_INFRASTRUCTURE, toolUse.getName());
     Assert.assertEquals(uri, toolUse.getParameters().get("uri").asString());
-    Assert.assertEquals("winnipeg-dem", toolUse.getParameters().get("category").asString());
+    Assert.assertEquals("winnipeg-dem", toolUse.getParameters().get("collection").asString());
   }
   
   @Test
@@ -224,6 +224,6 @@ public class BedrockConverseServiceIntegrationTest
     
     Assert.assertEquals(BedrockConverseService.DISSEMINATION_AREAS, toolUse.getName());
     Assert.assertEquals(uri, toolUse.getParameters().get("uri").asString());
-    Assert.assertEquals("winnipeg-dem", toolUse.getParameters().get("category").asString());
+    Assert.assertEquals("winnipeg-dem", toolUse.getParameters().get("collection").asString());
   }
 }
